@@ -1,0 +1,20 @@
+{
+  "mongo": {
+    "user": "",
+    "pass": ""
+  },
+  "kovan": {
+    "tub": "0x771aa6e0a64641d46c49009a867d9ac4fc32d317",
+    "tap": "0xce8861b1bd1e79d700464b1557a90ef7e3447cfd",
+    "jar": "0xfa7def0fc82f30557764b2f9f03a332cbe58950e",
+    "tip": "0x788c438e1882d0e7b91548bad08143bcad3e6c55",
+    "med": "0xd5fb49fde313db2deeddc90374772468eb44b973"
+  },
+  "live": {
+    "tub": "",
+    "tap": "",
+    "jar": "",
+    "tip": "",
+    "med": ""
+  }
+}

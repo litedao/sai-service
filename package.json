@@ -1,0 +1,25 @@
+{
+  "name": "sai-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "mongoose": "^4.11.1",
+    "web3": "^0.19.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "service": "node service",
+    "sync": "node sync",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gbalabasquer/sai-service.git"
+  },
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/gbalabasquer/sai-service/issues"
+  },
+  "homepage": "https://github.com/gbalabasquer/sai-service#readme"
+}

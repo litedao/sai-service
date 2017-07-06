@@ -1,0 +1,141 @@
+#! /usr/bin/env node
+
+const mongoose = require('./schema').mongoose;
+const settings = require('./settings');
+const Web3 = require('web3'); 
+
+const web3 = new Web3();
+let port = 8545;
+process.argv.forEach(function (v, i) {
+  if (v === '--port' && typeof process.argv[i + 1] !== 'undefined') {
+    port = process.argv[i + 1];
+  }
+});
+web3.setProvider(new Web3.providers.HttpProvider(`http://localhost:${port}`));
+
+const tubAbi = require('./abi/tub').abi;
+const tapAbi = require('./abi/tap').abi;
+const jarAbi = require('./abi/jar').abi;
+const tipAbi = require('./abi/tip').abi;
+const medAbi = require('./abi/medianizer').abi;
+
+web3.eth.getBlock(0, (e, res) => {
+  let network = false;
+  if (!e) {
+    switch (res.hash) {
+      case '0xa3c565fc15c7478862d50ccd6561e3c06b24cc509bf388941c25ea985ce32cb9':
+        network = 'kovan';
+        break;
+      case '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3':
+        network = 'main';
+        break;
+      default:
+        network = 'private';
+    }
+    mongoose.connect(`mongodb://localhost/sai-service-${network}`, {}, (e) => {
+      if (!e) {
+        init(network);
+      }
+    });
+  }
+ });
+
+const methodSig = (method) => {
+  return web3.sha3(method).substring(0, 10)
+}
+
+const init = (network) => {
+  const tub = web3.eth.contract(tubAbi).at(settings[network].tub);
+  const tap = web3.eth.contract(tapAbi).at(settings[network].tap);
+  const jar = web3.eth.contract(jarAbi).at(settings[network].jar);
+  const tip = web3.eth.contract(tipAbi).at(settings[network].tip);
+  const med = web3.eth.contract(medAbi).at(settings[network].med);
+
+  const Par = mongoose.model('Par');
+  Par.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
+    if (!e) {
+      tip.LogNote({ sig: methodSig('coax(uint128)') }, { fromBlock: (r.length === 0 ? 0 : r[0].last_block + 1) }, (e2, r2) => {
+        if (!e2) {
+          web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
+            if (!e3) {
+              Par.collection.insert({ value: web3.toBigNumber(r2.args.foo).toNumber(), last_block: r2.blockNumber, timestamp: r3.timestamp });
+            } 
+          });
+        }
+      });
+    }
+  });
+
+  const Per = mongoose.model('Per');
+  Per.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
+    if (!e) {
+      tap.LogNote({ sig: [methodSig('boom(uint128)'), methodSig('bust(uint128)')] }, { fromBlock: (r.length === 0 ? 0 : r[0].last_block + 1) }, (e2, r2) => {
+        if (!e2) {
+          web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
+            if (!e3) {
+              jar.per(r2.blockNumber, (e4, r4) => {
+                if (!e4) {
+                  Per.collection.insert({ value: web3.toBigNumber(r4).toNumber(), last_block: r2.blockNumber, timestamp: r3.timestamp });
+                }
+              });
+            } 
+          });
+        }
+      });
+    }
+  });
+
+  const Pip = mongoose.model('Pip');
+  Pip.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
+    if (!e) {
+      med.LogNote({ sig: methodSig('poke()') }, { fromBlock: (r.length === 0 ? 0 : r[0].last_block + 1) }, (e2, r2) => {
+        if (!e2) {
+          web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
+            if (!e3) {
+              med.read(r2.blockNumber, (e4, r4) => {
+                if (!e4) {
+                  Pip.collection.insert({ value: r4 !== '0x' ? web3.toBigNumber(r4).toNumber() : null, last_block: r2.blockNumber, timestamp: r3.timestamp });
+                }
+              });
+            } 
+          });
+        }
+      });
+    }
+  });
+
+  const Cup = mongoose.model('Cup');
+  Cup.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
+    web3.eth.filter({ fromBlock: (r.length === 0 ? 0 : r[0].last_block), address: tub.address }, (e2, r2) => {
+      if (!e2) {
+        if (r2.topics[0] === web3.sha3('LogNewCup(address,bytes32)')) {
+          Cup.collection.update({ cupi: web3.toBigNumber(r2.data).toNumber() },
+                                {
+                                  cupi: web3.toBigNumber(r2.data).toNumber(),
+                                  lad: '0x' + r2.topics[1].substring(26),
+                                  closed: false,
+                                  last_block: r2.blockNumber
+                                },
+                                { upsert: true });
+        } else if (r2.topics[0] === methodSig('shut(bytes32)') + '00000000000000000000000000000000000000000000000000000000') {
+          Cup.collection.update({ cupi: web3.toBigNumber(r2.topics[2]).toNumber() },
+                                {
+                                  $set:
+                                        {
+                                          closed: true,
+                                          last_block: r2.blockNumber
+                                        }
+                                });
+        } else if (r2.topics[0] === methodSig('give(bytes32,address)') + '00000000000000000000000000000000000000000000000000000000') {
+          Cup.collection.update({ cupi: web3.toBigNumber(r2.topics[2]).toNumber() },
+                                { $set:
+                                        {
+                                          lad: '0x' + r2.topics[3].substring(26),
+                                          last_block: r2.blockNumber
+                                        }
+                                });
+        }
+      }
+    });
+  });
+}

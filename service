@@ -1,0 +1,140 @@
+#! /usr/bin/env node
+
+const mongoose = require('./schema.js').mongoose;
+
+let network = 'main';
+let port = 4000;
+process.argv.forEach(function (v, i) {
+  if (v === '--network' && typeof process.argv[i + 1] !== 'undefined') {
+    network = process.argv[i + 1];
+  }
+  if (v === '--port' && typeof process.argv[i + 1] !== 'undefined') {
+    port = process.argv[i + 1];
+  }
+});
+
+mongoose.connect(`mongodb://localhost/sai-service-${network}`, {}, (e) => {
+  if (!e) {
+    var http = require('http');
+
+    http.createServer(function (req, res) {
+      let ret = "";
+      const p = prom(req.url);
+      Promise.resolve(p).then((ret) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.writeHead(200, {'Content-Type': 'application/json'});
+        res.end(JSON.stringify(ret));
+      });
+    }).listen(port);
+  }
+});
+ 
+console.log(`Server running on port ${port}. Reading from DB: sai-service-${network}.`);
+
+const prom = (url) => {
+  const p = new Promise((resolve, reject) => {
+    const urlParts = url.split('/');
+
+    const conditions = {};
+    if (typeof urlParts[2] !== 'undefined') {
+      const statements = urlParts[2].split('=');
+      urlParts[2].split('&').forEach(function (v) {
+        const keyVal = v.split(':');
+        if (keyVal.length === 2) {
+          const value = keyVal[1].match(/^\d+$/) ? parseInt(keyVal[1], 10) : (keyVal[1] === 'true' ? true : (keyVal[1] === 'false' ? false : keyVal[1]));
+          const index = keyVal[0].replace('.gte', '').replace('.gt', '').replace('.lte', '').replace('.lt', '');
+          if (typeof conditions[index] === 'undefined') { conditions[index] = {}; }
+          if (keyVal[0].indexOf('.gte') !== -1) {
+            conditions[index]['$gte'] = value;
+          } else if (keyVal[0].indexOf('.gt') !== -1) {
+            conditions[index]['$gt'] = value;
+          } else if (keyVal[0].indexOf('.lte') !== -1) {
+            conditions[index]['$lte'] = value;
+          } else if (keyVal[0].indexOf('.lt') !== -1) {
+            conditions[index]['$lt'] = value;
+          } else {
+            conditions[keyVal[0]] = value;
+          }
+        }
+      });
+    }
+    const sort = {};
+    if (typeof urlParts[3] !== 'undefined') {
+      urlParts[3].split('&').forEach(function (v) {
+        const keyVal = v.split(':');
+        if (keyVal.length === 2 && (keyVal[1] === 'asc' || keyVal[1] === 'desc')) {
+          const value = keyVal[1] === 'asc' ? 1 : -1;
+          const index = keyVal[0];
+          sort[index] = value;
+        }
+      });
+    }
+
+    switch(urlParts[1]) {
+      case 'pars':
+        mongoose.model('Par').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
+          if (!e) {
+            mongoose.model('Par').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
+              if (!e2) {
+                resolve({ last_block: r2[0].last_block, results: r });
+              } else {
+                reject(e2);
+              }
+            });
+          } else {
+            reject(e);
+          }
+        });
+        break;
+      case 'pers':
+        mongoose.model('Per').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
+          if (!e) {
+            mongoose.model('Per').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
+              if (!e2) {
+                resolve({ last_block: r2[0].last_block, results: r });
+              } else {
+                reject(e2);
+              }
+            });
+          } else {
+            reject(e);
+          }
+        });
+        break;
+      case 'pips':
+        mongoose.model('Pip').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
+          if (!e) {
+            mongoose.model('Pip').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
+              if (!e2) {
+                resolve({ last_block: r2[0].last_block, results: r });
+              } else {
+                reject(e2);
+              }
+            });
+          } else {
+            reject(e);
+          }
+        });
+        break;
+      case 'cups':
+        mongoose.model('Cup').collection.find(conditions).sort(sort ? sort : { 'cupi': 1 }).toArray((e, r) => {
+          if (!e) {
+            mongoose.model('Cup').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
+              if (!e2) {
+                resolve({ last_block: r2[0].last_block, results: r });
+              } else {
+                reject(e2);
+              }
+            });
+          } else {
+            reject(e);
+          }
+        });
+        break;
+      default:
+        resolve('');
+        break;
+    }
+  });
+  return p;
+}
