@@ -13,6 +13,8 @@ process.argv.forEach(function (v, i) {
 });
 web3.setProvider(new Web3.providers.HttpProvider(`http://localhost:${port}`));
 
+console.log(`MongoDB syncing from http://localhost:${port}`);
+
 const tubAbi = require('./abi/tub').abi;
 const tapAbi = require('./abi/tap').abi;
 const jarAbi = require('./abi/jar').abi;
@@ -32,7 +34,8 @@ web3.eth.getBlock(0, (e, res) => {
       default:
         network = 'private';
     }
-    mongoose.connect(`mongodb://localhost/sai-service-${network}`, {}, (e) => {
+    console.log(`${network} network detected`)
+    mongoose.connect(`mongodb://localhost/sai-service-${network}`, { useMongoClient: true }, (e) => {
       if (!e) {
         init(network);
       }

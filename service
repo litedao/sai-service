@@ -13,7 +13,7 @@ process.argv.forEach(function (v, i) {
   }
 });
 
-mongoose.connect(`mongodb://localhost/sai-service-${network}`, {}, (e) => {
+mongoose.connect(`mongodb://localhost/sai-service-${network}`, { useMongoClient: true }, (e) => {
   if (!e) {
     var http = require('http');
 
@@ -29,7 +29,7 @@ mongoose.connect(`mongodb://localhost/sai-service-${network}`, {}, (e) => {
   }
 });
  
-console.log(`Server running on port ${port}. Reading from DB: sai-service-${network}.`);
+console.log(`Server running on port ${port}, reading from DB: sai-service-${network}`);
 
 const prom = (url) => {
   const p = new Promise((resolve, reject) => {
