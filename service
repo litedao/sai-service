@@ -76,7 +76,7 @@ const prom = (url) => {
           if (!e) {
             mongoose.model('Par').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
               if (!e2) {
-                resolve({ last_block: r2[0].last_block, results: r });
+                resolve({ last_block: r2 && r2[0] ? r2[0].last_block : 0, results: r });
               } else {
                 reject(e2);
               }
@@ -91,7 +91,7 @@ const prom = (url) => {
           if (!e) {
             mongoose.model('Per').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
               if (!e2) {
-                resolve({ last_block: r2[0].last_block, results: r });
+                resolve({ last_block: r2 && r2[0] ? r2[0].last_block : 0, results: r });
               } else {
                 reject(e2);
               }
@@ -106,7 +106,7 @@ const prom = (url) => {
           if (!e) {
             mongoose.model('Pip').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
               if (!e2) {
-                resolve({ last_block: r2[0].last_block, results: r });
+                resolve({ last_block: r2 && r2[0] ? r2[0].last_block : 0, results: r });
               } else {
                 reject(e2);
               }
@@ -121,7 +121,7 @@ const prom = (url) => {
           if (!e) {
             mongoose.model('Cup').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
               if (!e2) {
-                resolve({ last_block: r2[0].last_block, results: r });
+                resolve({ last_block: r2 && r2[0] ? r2[0].last_block : 0, results: r });
               } else {
                 reject(e2);
               }
