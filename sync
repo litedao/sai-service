@@ -91,15 +91,12 @@ const init = (network) => {
   const Pip = mongoose.model('Pip');
   Pip.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
     if (!e) {
-      med.LogNote({ sig: methodSig('poke()') }, { fromBlock: (r.length === 0 ? 0 : r[0].last_block + 1) }, (e2, r2) => {
+      console.log('hola');
+      med.LogValue({}, { fromBlock: (r.length === 0 ? 0 : r[0].last_block + 1) }, (e2, r2) => {
         if (!e2) {
           web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
             if (!e3) {
-              med.read(r2.blockNumber, (e4, r4) => {
-                if (!e4) {
-                  Pip.collection.insert({ value: r4 !== '0x' ? web3.toBigNumber(r4).toNumber() : null, last_block: r2.blockNumber, timestamp: r3.timestamp });
-                }
-              });
+              Pip.collection.insert({ value: r2.args.val !== '0x' ? web3.toBigNumber(r2.args.val).toNumber() : null, last_block: r2.blockNumber, timestamp: r3.timestamp });
             } 
           });
         }

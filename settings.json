@@ -4,11 +4,11 @@
     "pass": ""
   },
   "kovan": {
-    "tub": "0x771aa6e0a64641d46c49009a867d9ac4fc32d317",
-    "tap": "0xce8861b1bd1e79d700464b1557a90ef7e3447cfd",
-    "jar": "0xfa7def0fc82f30557764b2f9f03a332cbe58950e",
-    "tip": "0x788c438e1882d0e7b91548bad08143bcad3e6c55",
-    "med": "0xd5fb49fde313db2deeddc90374772468eb44b973"
+    "tub": "0xb215612d29a9f7c0871b7b39142633ee074b785b",
+    "tap": "0xc527cbed697a460a1d21dab07ebeec62c72894a3",
+    "jar": "0x65ee1a8230076c134b499f3456cc48d9fbe4cbf7",
+    "tip": "0x6313bf842e48b132df9ea84211eb822c3febfb9d",
+    "med": "0xa944bd4b25c9f186a846fd5668941aa3d3b8425f"
   },
   "live": {
     "tub": "",
