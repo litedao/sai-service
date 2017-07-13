@@ -2,7 +2,9 @@
 
 const mongoose = require('./schema').mongoose;
 const settings = require('./settings');
-const Web3 = require('web3'); 
+const Web3 = require('web3');
+var Queue = require('sync-queue');
+var queue = new Queue();
 
 const web3 = new Web3();
 let port = 8545;
@@ -91,7 +93,6 @@ const init = (network) => {
   const Pip = mongoose.model('Pip');
   Pip.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
     if (!e) {
-      console.log('hola');
       med.LogValue({}, { fromBlock: (r.length === 0 ? 0 : r[0].last_block + 1) }, (e2, r2) => {
         if (!e2) {
           web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
@@ -109,31 +110,52 @@ const init = (network) => {
     web3.eth.filter({ fromBlock: (r.length === 0 ? 0 : r[0].last_block), address: tub.address }, (e2, r2) => {
       if (!e2) {
         if (r2.topics[0] === web3.sha3('LogNewCup(address,bytes32)')) {
-          Cup.collection.update({ cupi: web3.toBigNumber(r2.data).toNumber() },
+          queue.place(() => Cup.collection.update({ cupi: web3.toBigNumber(r2.data).toNumber() },
                                 {
                                   cupi: web3.toBigNumber(r2.data).toNumber(),
                                   lad: '0x' + r2.topics[1].substring(26),
+                                  art: 0,
+                                  ink: 0,
                                   closed: false,
                                   last_block: r2.blockNumber
                                 },
-                                { upsert: true });
+                                { upsert: true }, () => queue.next()));
         } else if (r2.topics[0] === methodSig('shut(bytes32)') + '00000000000000000000000000000000000000000000000000000000') {
-          Cup.collection.update({ cupi: web3.toBigNumber(r2.topics[2]).toNumber() },
+          queue.place(() => Cup.collection.update({ cupi: web3.toBigNumber(r2.topics[2]).toNumber() },
                                 {
                                   $set:
                                         {
+                                          art: 0,
+                                          ink: 0,
                                           closed: true,
                                           last_block: r2.blockNumber
                                         }
-                                });
+                                }, {}, () => queue.next()));
         } else if (r2.topics[0] === methodSig('give(bytes32,address)') + '00000000000000000000000000000000000000000000000000000000') {
-          Cup.collection.update({ cupi: web3.toBigNumber(r2.topics[2]).toNumber() },
+          queue.place(() => Cup.collection.update({ cupi: web3.toBigNumber(r2.topics[2]).toNumber() },
                                 { $set:
                                         {
                                           lad: '0x' + r2.topics[3].substring(26),
                                           last_block: r2.blockNumber
                                         }
-                                });
+                                }, {}, () => queue.next()));
+        } else if (r2.topics[0] === methodSig('lock(bytes32,uint128)') + '00000000000000000000000000000000000000000000000000000000' ||
+                   r2.topics[0] === methodSig('free(bytes32,uint128)') + '00000000000000000000000000000000000000000000000000000000' ||
+                   r2.topics[0] === methodSig('draw(bytes32,uint128)') + '00000000000000000000000000000000000000000000000000000000' ||
+                   r2.topics[0] === methodSig('wipe(bytes32,uint128)') + '00000000000000000000000000000000000000000000000000000000' ||
+                   r2.topics[0] === methodSig('bite(bytes32)') + '00000000000000000000000000000000000000000000000000000000') {
+          tub.cups.call(r2.topics[2], (e3, r3) => {
+            if (!e3) {
+              queue.place(() => Cup.collection.update({ cupi: web3.toBigNumber(r2.topics[2]).toNumber() },
+                                    { $set:
+                                            {
+                                              art: r3[1].toNumber(),
+                                              ink: r3[2].toNumber(),
+                                              last_block: r2.blockNumber
+                                            }
+                                    }, {}, () => queue.next()));
+            }
+          });
         }
       }
     });

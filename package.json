@@ -5,6 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "mongoose": "^4.11.1",
+    "sync-queue": "0.0.2",
     "web3": "^0.19.1"
   },
   "devDependencies": {},

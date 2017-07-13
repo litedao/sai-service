@@ -37,6 +37,8 @@ const Cup = new Schema(
   {
     "cupi": Number,
     "lad": String,
+    "art": Number,
+    "ink": Number,
     "closed": Boolean,
     "last_block": Number,
   });
