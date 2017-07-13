@@ -22,10 +22,18 @@ Have MongoDB previously synced. `sync` service should be running in parallel to 
 
 ### Consume Service:
 
-`http://[DOMAIN/IP]:[LISTEN_PORT]/cups/[CONDITIONS]/[SORT]` (lad:[ADDRESS]&closed:[true/false]])
+`http://[DOMAIN/IP]:[LISTEN_PORT]/[METHOD]/[CONDITIONS]/[SORT]`
 
-`http://[DOMAIN/IP]:[LISTEN_PORT]/pars/[CONDITIONS]/[SORT]` (timestamp:[VAL]/timestamp.gte:[VAL]/timestamp.lt:[VAL]) (timestamp:[asc/desc]])
+#### CONDITIONS
+[field]:[value] || [field].gt:[value] || [field].gte:[value] || [field].lt:[value] || [field].lte:[value]
 
-`http://[DOMAIN/IP]:[LISTEN_PORT]/pers/[CONDITIONS]/[SORT]`
+#### SORT
+[field]:asc || [field]:desc
 
-`http://[DOMAIN/IP]:[LISTEN_PORT]/pips/[CONDITIONS]/[SORT]`
+#### METHOD
+cups || ways || pers || pips
+
+#### FIELDS
+cups: cupi || lad || art || ink || closed || safe
+
+ways/pers/pips: value || timestamp

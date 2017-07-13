@@ -18,7 +18,7 @@ mongoose.connect(`mongodb://localhost/sai-service-${network}`, { useMongoClient:
     var http = require('http');
 
     http.createServer(function (req, res) {
-      let ret = "";
+      let ret = '';
       const p = prom(req.url);
       Promise.resolve(p).then((ret) => {
         res.setHeader('Access-Control-Allow-Origin', '*');
@@ -71,10 +71,10 @@ const prom = (url) => {
     }
 
     switch(urlParts[1]) {
-      case 'pars':
-        mongoose.model('Par').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
+      case 'ways':
+        mongoose.model('Way').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
           if (!e) {
-            mongoose.model('Par').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
+            mongoose.model('Way').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
               if (!e2) {
                 resolve({ last_block: r2 && r2[0] ? r2[0].last_block : 0, results: r });
               } else {
@@ -117,18 +117,61 @@ const prom = (url) => {
         });
         break;
       case 'cups':
-        mongoose.model('Cup').collection.find(conditions).sort(sort ? sort : { 'cupi': 1 }).toArray((e, r) => {
-          if (!e) {
-            mongoose.model('Cup').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
-              if (!e2) {
-                resolve({ last_block: r2 && r2[0] ? r2[0].last_block : 0, results: r });
-              } else {
-                reject(e2);
-              }
-            });
-          } else {
-            reject(e);
+        mongoose.model('Var').collection.find().toArray((e, r) => {
+          const vars = {};
+          r.forEach((item)=> {
+            vars[item.name] = item.value;
+          });
+          if (typeof vars.per === 'undefined') {
+            vars.per = 1000000000000000000; // Default value
           }
+          if (typeof vars.mat === 'undefined') {
+            vars.mat = 1000000000000000000; // Default value
+          }
+          const ratio = vars.chi * vars.par * vars.mat / (vars.per * vars.pip * 1000000000000000000);
+          if (typeof conditions.safe !== 'undefined') {
+            const safe = conditions.safe;
+            delete conditions.safe;
+            conditions.ratio = {};
+            conditions.ratio[safe ? '$gte' : '$lt'] = ratio;
+          }
+
+          mongoose.model('Cup').collection.aggregate([
+              {
+                '$project': {
+                  'cupi': '$cupi',
+                  'lad': '$lad',
+                  'art': '$art',
+                  'ink': '$ink',
+                  'closed': '$closed',
+                  'last_block': '$last_block',
+                  // If art === 0, then cup is safe, so we define a big ratio to pass the condition
+                  'ratio': { '$cond': [ { '$eq': [ '$art', 0 ] }, 999999999999999, { '$divide': [ '$ink', '$art' ] } ] },
+                },
+              },
+              {
+                '$match': conditions,
+              },
+              {
+                '$sort': Object.keys(sort).length > 0 ? sort : { 'cupi': 1 }
+              }
+          ]).toArray((e, r) => {
+            if (!e) {
+              mongoose.model('Cup').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
+                if (!e2) {
+                  r.forEach((item, index) => {
+                    r[index].safe = r[index].closed || r[index].ratio >= ratio;
+                    delete r[index].ratio;
+                  });
+                  resolve({ last_block: r2 && r2[0] ? r2[0].last_block : 0, results: r });
+                } else {
+                  reject(e2);
+                }
+              });
+            } else {
+              reject(e);
+            }
+          });
         });
         break;
       default:
