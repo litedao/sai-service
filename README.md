@@ -4,7 +4,7 @@
 
 ### Prerequisites
 
-Have a local node running with pruning archive
+Have a local node running
 
 ### Sync DB:
 
