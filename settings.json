@@ -1,20 +1,23 @@
 {
+  "cors": "*",
   "mongo": {
     "user": "",
     "pass": ""
   },
-  "kovan": {
-    "tub": "0xb215612d29a9f7c0871b7b39142633ee074b785b",
-    "tap": "0xc527cbed697a460a1d21dab07ebeec62c72894a3",
-    "jar": "0x65ee1a8230076c134b499f3456cc48d9fbe4cbf7",
-    "tip": "0x6313bf842e48b132df9ea84211eb822c3febfb9d",
-    "med": "0xa944bd4b25c9f186a846fd5668941aa3d3b8425f"
-  },
-  "live": {
-    "tub": "",
-    "tap": "",
-    "jar": "",
-    "tip": "",
-    "med": ""
+  "chain": {
+    "kovan": {
+      "tub": "",
+      "tap": "",
+      "jar": "",
+      "tip": "",
+      "med": ""
+    },
+    "live": {
+      "tub": "",
+      "tap": "",
+      "jar": "",
+      "tip": "",
+      "med": ""
+    }
   }
 }

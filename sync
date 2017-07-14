@@ -49,11 +49,11 @@ const methodSig = (method) => {
 }
 
 const init = (network) => {
-  const tub = web3.eth.contract(tubAbi).at(settings[network].tub);
-  const tap = web3.eth.contract(tapAbi).at(settings[network].tap);
-  const jar = web3.eth.contract(jarAbi).at(settings[network].jar);
-  const tip = web3.eth.contract(tipAbi).at(settings[network].tip);
-  const med = web3.eth.contract(medAbi).at(settings[network].med);
+  const tub = web3.eth.contract(tubAbi).at(settings.chain[network].tub);
+  const tap = web3.eth.contract(tapAbi).at(settings.chain[network].tap);
+  const jar = web3.eth.contract(jarAbi).at(settings.chain[network].jar);
+  const tip = web3.eth.contract(tipAbi).at(settings.chain[network].tip);
+  const med = web3.eth.contract(medAbi).at(settings.chain[network].med);
 
   const Var = mongoose.model('Var');
   const Way = mongoose.model('Way');
