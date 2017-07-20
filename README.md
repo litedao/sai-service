@@ -22,7 +22,7 @@ Have MongoDB previously synced. `sync` service should be running in parallel to 
 
 ### Consume Service:
 
-`http://[DOMAIN/IP]:[LISTEN_PORT]/[METHOD]/[CONDITIONS]/[SORT]`
+`http://[DOMAIN/IP]:[LISTEN_PORT]/[METHOD]/conditions=[CONDITIONS]/sort=[SORT]`
 
 #### CONDITIONS
 [field]:[value] || [field].gt:[value] || [field].gte:[value] || [field].lt:[value] || [field].lte:[value]

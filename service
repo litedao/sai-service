@@ -37,38 +37,45 @@ const prom = (url) => {
     const urlParts = url.split('/');
 
     const conditions = {};
-    if (typeof urlParts[2] !== 'undefined') {
-      const statements = urlParts[2].split('=');
-      urlParts[2].split('&').forEach(function (v) {
-        const keyVal = v.split(':');
-        if (keyVal.length === 2) {
-          const value = keyVal[1].match(/^\d+$/) ? parseInt(keyVal[1], 10) : (keyVal[1] === 'true' ? true : (keyVal[1] === 'false' ? false : keyVal[1]));
-          const index = keyVal[0].replace('.gte', '').replace('.gt', '').replace('.lte', '').replace('.lt', '');
-          if (typeof conditions[index] === 'undefined') { conditions[index] = {}; }
-          if (keyVal[0].indexOf('.gte') !== -1) {
-            conditions[index]['$gte'] = value;
-          } else if (keyVal[0].indexOf('.gt') !== -1) {
-            conditions[index]['$gt'] = value;
-          } else if (keyVal[0].indexOf('.lte') !== -1) {
-            conditions[index]['$lte'] = value;
-          } else if (keyVal[0].indexOf('.lt') !== -1) {
-            conditions[index]['$lt'] = value;
-          } else {
-            conditions[keyVal[0]] = value;
+    const sort = {};
+
+    for (i=2; i < urlParts.length; i++) {
+      if (urlParts[i].indexOf('=') !== -1) {
+        const param = urlParts[i].split('=');
+        if (['conditions', 'sort', 'limit'].indexOf(param[0]) !== -1) {
+          if (param[0] === 'conditions') {
+            param[1].split('&').forEach(function (v) {
+              const keyVal = v.split(':');
+              if (keyVal.length === 2) {
+                const value = keyVal[1].match(/^\d+$/) ? parseInt(keyVal[1], 10) : (keyVal[1] === 'true' ? true : (keyVal[1] === 'false' ? false : keyVal[1]));
+                const index = keyVal[0].replace('.gte', '').replace('.gt', '').replace('.lte', '').replace('.lt', '');
+                if (typeof conditions[index] === 'undefined') { conditions[index] = {}; }
+                if (keyVal[0].indexOf('.gte') !== -1) {
+                  conditions[index]['$gte'] = value;
+                } else if (keyVal[0].indexOf('.gt') !== -1) {
+                  conditions[index]['$gt'] = value;
+                } else if (keyVal[0].indexOf('.lte') !== -1) {
+                  conditions[index]['$lte'] = value;
+                } else if (keyVal[0].indexOf('.lt') !== -1) {
+                  conditions[index]['$lt'] = value;
+                } else {
+                  conditions[keyVal[0]] = value;
+                }
+              }
+            });
+          }
+          if (param[0] === 'sort') {
+            param[1].split('&').forEach(function (v) {
+              const keyVal = v.split(':');
+              if (keyVal.length === 2 && (keyVal[1] === 'asc' || keyVal[1] === 'desc')) {
+                const value = keyVal[1] === 'asc' ? 1 : -1;
+                const index = keyVal[0];
+                sort[index] = value;
+              }
+            });
           }
         }
-      });
-    }
-    const sort = {};
-    if (typeof urlParts[3] !== 'undefined') {
-      urlParts[3].split('&').forEach(function (v) {
-        const keyVal = v.split(':');
-        if (keyVal.length === 2 && (keyVal[1] === 'asc' || keyVal[1] === 'desc')) {
-          const value = keyVal[1] === 'asc' ? 1 : -1;
-          const index = keyVal[0];
-          sort[index] = value;
-        }
-      });
+      }
     }
 
     switch(urlParts[1]) {
