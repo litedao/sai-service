@@ -16,6 +16,7 @@ web3.setProvider(new Web3.providers.HttpProvider(`http://localhost:${port}`));
 
 console.log(`MongoDB syncing from http://localhost:${port}`);
 
+const topAbi = require('./abi/top').abi;
 const tubAbi = require('./abi/tub').abi;
 const tapAbi = require('./abi/tap').abi;
 const jarAbi = require('./abi/jar').abi;
@@ -48,13 +49,45 @@ const methodSig = (method) => {
   return web3.sha3(method).substring(0, 10)
 }
 
-const init = (network) => {
-  const tub = web3.eth.contract(tubAbi).at(settings.chain[network].tub);
-  const tap = web3.eth.contract(tapAbi).at(settings.chain[network].tap);
-  const jar = web3.eth.contract(jarAbi).at(settings.chain[network].jar);
-  const tip = web3.eth.contract(tipAbi).at(settings.chain[network].tip);
-  const med = web3.eth.contract(medAbi).at(settings.chain[network].med);
+const getAddress = (object, name) => {
+  const p = new Promise((resolve, reject) => {
+    object[name].call((e, r) => {
+      if (!e) {
+        resolve(r);
+      } else {
+        reject(e);
+      }
+    });
+  });
+  return p;
+}
 
+const init = (network) => {
+  const top = web3.eth.contract(topAbi).at(settings.chain[network].top);
+  const promises = [getAddress(top, 'tub'), getAddress(top, 'tap')];
+  Promise.all(promises).then((r) => {
+    if (r[0] && r[1] && web3.isAddress(r[0]) && web3.isAddress(r[1])) {
+      const tub = web3.eth.contract(tubAbi).at(r[0]);
+      const tap = web3.eth.contract(tapAbi).at(r[1]);
+      const promises2 = [getAddress(tub, 'jar'), getAddress(tub, 'tip')];
+      Promise.all(promises2).then((r2) => {
+        if (r2[0] && r2[1] && web3.isAddress(r2[0]) && web3.isAddress(r2[1])) {
+          const jar = web3.eth.contract(jarAbi).at(r2[0]);
+          const tip = web3.eth.contract(tipAbi).at(r2[1]);
+          const promise = getAddress(jar, 'pip');
+          Promise.resolve(promise).then((r3) => {
+            if (r3 && web3.isAddress(r3)) {
+              const med = web3.eth.contract(medAbi).at(r3);
+              executeSync(tub, tap, jar, tip, med);
+            }
+          });
+        }
+      });
+    }
+  });
+}
+
+const executeSync = (tub, tap, jar, tip, med) => {
   const Var = mongoose.model('Var');
   const Way = mongoose.model('Way');
   const Mat = mongoose.model('Mat');
