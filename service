@@ -38,11 +38,12 @@ const prom = (url) => {
 
     const conditions = {};
     const sort = {};
-
+    let skip = 0;
+    let limit = null;
     for (i=2; i < urlParts.length; i++) {
       if (urlParts[i].indexOf('=') !== -1) {
         const param = urlParts[i].split('=');
-        if (['conditions', 'sort', 'limit'].indexOf(param[0]) !== -1) {
+        if (['conditions', 'sort', 'skip', 'limit'].indexOf(param[0]) !== -1) {
           if (param[0] === 'conditions') {
             param[1].split('&').forEach(function (v) {
               const keyVal = v.split(':');
@@ -63,8 +64,7 @@ const prom = (url) => {
                 }
               }
             });
-          }
-          if (param[0] === 'sort') {
+          } else if (param[0] === 'sort') {
             param[1].split('&').forEach(function (v) {
               const keyVal = v.split(':');
               if (keyVal.length === 2 && (keyVal[1] === 'asc' || keyVal[1] === 'desc')) {
@@ -73,6 +73,10 @@ const prom = (url) => {
                 sort[index] = value;
               }
             });
+          } else if (param[0] === 'skip' && parseInt(param[1], 10) > 0) {
+            skip = parseInt(param[1], 10);
+          } else if (param[0] === 'limit' && parseInt(param[1], 10) > 0) {
+            limit = parseInt(param[1], 10);
           }
         }
       }
@@ -144,26 +148,27 @@ const prom = (url) => {
             conditions.ratio[safe ? '$gte' : '$lt'] = ratio;
           }
 
-          mongoose.model('Cup').collection.aggregate([
-              {
-                '$project': {
-                  'cupi': '$cupi',
-                  'lad': '$lad',
-                  'art': '$art',
-                  'ink': '$ink',
-                  'closed': '$closed',
-                  'last_block': '$last_block',
-                  // If art === 0, then cup is safe, so we define a big ratio to pass the condition
-                  'ratio': { '$cond': [ { '$eq': [ '$art', 0 ] }, 999999999999999, { '$divide': [ '$ink', '$art' ] } ] },
-                },
+          const options = [
+            {
+              '$project': {
+                'cupi': '$cupi',
+                'lad': '$lad',
+                'art': '$art',
+                'ink': '$ink',
+                'closed': '$closed',
+                'last_block': '$last_block',
+                // If art === 0, then cup is safe, so we define a big ratio to pass the condition
+                'ratio': { '$cond': [ { '$eq': [ '$art', 0 ] }, 999999999999999, { '$divide': [ '$ink', '$art' ] } ] },
               },
-              {
-                '$match': conditions,
-              },
-              {
-                '$sort': Object.keys(sort).length > 0 ? sort : { 'cupi': 1 }
-              }
-          ]).toArray((e, r) => {
+            }
+          ]
+
+          options.push({ '$match': conditions });
+          options.push({ '$sort': Object.keys(sort).length > 0 ? sort : { 'cupi': 1 } });
+          if (skip && skip > 0) { options.push({ '$skip': skip }); }
+          if (limit && limit > 0) { options.push({ '$limit': limit }); }
+
+          mongoose.model('Cup').collection.aggregate(options).toArray((e, r) => {
             if (!e) {
               mongoose.model('Cup').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
                 if (!e2) {
