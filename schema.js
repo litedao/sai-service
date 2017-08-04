@@ -58,6 +58,18 @@ const Cup = new Schema(
   });
 mongoose.model('Cup', Cup);
 
+// CupHistoryActions
+const CupHistoryAction = new Schema(
+  {
+    "action": String, // open - shut - give - lock - free - draw - wipe - bite
+    "cupi": Number,
+    "param": String,
+    "timestamp": Number,
+    "block": Number,
+    "transactionHash": String,
+  });
+mongoose.model('CupHistoryAction', CupHistoryAction);
+
 module.exports = {
   mongoose
 }
