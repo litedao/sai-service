@@ -143,6 +143,15 @@ const prom = (url) => {
           }
         });
         break;
+      case 'cupHistoryActions':
+        mongoose.model('CupHistoryAction').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
+          if (!e) {
+            resolve({ results: r });
+          } else {
+            reject(e);
+          }
+        });
+        break;
       case 'cups':
         mongoose.model('Var').collection.find().toArray((e, r) => {
           const vars = {};

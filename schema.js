@@ -63,6 +63,7 @@ const CupHistoryAction = new Schema(
   {
     "action": String, // open - shut - give - lock - free - draw - wipe - bite
     "cupi": Number,
+    "sender": String,
     "param": String,
     "timestamp": Number,
     "block": Number,
