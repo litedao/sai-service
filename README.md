@@ -20,6 +20,10 @@ Have MongoDB previously synced. `sync` service should be running in parallel to 
 
 `node ./service --network [NETWORK] --port [LISTEN_PORT]` (default: main) (default: 4000)
 
+### Clean MongoDB (sync should be stopped before running this command and restarted after):
+
+`node ./clean --network [NETWORK]` (default: main)
+
 ### Consume Service:
 
 `http://[DOMAIN/IP]:[LISTEN_PORT]/[METHOD]/conditions=[CONDITIONS]/sort=[SORT]/limit=[NUMBER]/skip=[NUMBER]`
