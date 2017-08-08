@@ -136,7 +136,7 @@ const executeSync = (tub, tap, jar, tip, med) => {
         if (!e2) {
           web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
             if (!e3) {
-              jar.per(r2.blockNumber, (e4, r4) => {
+              jar.per((e4, r4) => {
                 if (!e4) {
                   Per.collection.insert({ value: web3.toBigNumber(r4).toNumber(), last_block: r2.blockNumber, timestamp: r3.timestamp });
                   Var.collection.update({ name: 'per' },
@@ -197,13 +197,13 @@ const executeSync = (tub, tap, jar, tip, med) => {
       }
     });
 
-    // This is necessary temporarily for mainnet as there is not LogValue Log working
+    // This is necessary temporarily for mainnet as there is not LogValue working
     med.peek.call((e, r) => {
       if (!e) {
         Var.collection.update({ name: 'pip' },
                                   {
                                     name: 'pip',
-                                    value: r[0] ? web3.toBigNumber(r[1]).toNumber() : 0,
+                                    value: r[1] ? web3.toBigNumber(r[0]).toNumber() : 0,
                                   },
                                   { upsert: true });
       }
