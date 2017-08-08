@@ -196,6 +196,18 @@ const executeSync = (tub, tap, jar, tip, med) => {
                                   { upsert: true });
       }
     });
+
+    // This is necessary temporarily for mainnet as there is not LogValue Log working
+    med.peek.call((e, r) => {
+      if (!e) {
+        Var.collection.update({ name: 'pip' },
+                                  {
+                                    name: 'pip',
+                                    value: r[0] ? web3.toBigNumber(r[1]).toNumber() : 0,
+                                  },
+                                  { upsert: true });
+      }
+    });
   }, 5000);
 
   var cupsQueue = new Queue();
