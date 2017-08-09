@@ -35,9 +35,13 @@ Have MongoDB previously synced. `sync` service should be running in parallel to 
 [field]:asc || [field]:desc
 
 #### METHOD
-cups || ways || pers || pips || mats
+cups || ways || pers || pips || mats || cupHistoryActions || cupStats
 
 #### FIELDS
 cups: cupi || lad || art || ink || closed || safe
 
 ways/pers/pips/mats: value || timestamp
+
+cupHistoryActions: action || cupi || value || sender || param || timestamp
+
+cupStat: cupi || sender || timestamp
