@@ -150,7 +150,6 @@ const prom = (url) => {
             conditionsC.action = action;
             mongoose.model('CupHistoryAction').collection.find(conditionsC).count((e, r) => {
               if (!e) {
-                // console.log(conditions, r);
                 resolve(r);
               } else {
                 reject(e);
@@ -186,11 +185,11 @@ const prom = (url) => {
         const promises = [actionCounter('open'), actionCounter('bite'), actionCounter('shut'), actionCounter('give'), saiAmounts()];
 
         Promise.all(promises).then(r => {
-          const result = { 'openCount' : r[0], 'biteCount': r[1], 'shutCount': r[2], 'giveCount': r[3], 'lockAmount': 0, 'freeAmount': '0', 'drawAmount': 0, 'wipeAmount': 0 };
+          const results = { 'openCount' : r[0], 'biteCount': r[1], 'shutCount': r[2], 'giveCount': r[3], 'lockAmount': 0, 'freeAmount': '0', 'drawAmount': 0, 'wipeAmount': 0 };
           r[4].forEach(value => {
-            result[`${value._id}Amount`] = value.amount;
+            results[`${value._id}Amount`] = value.amount;
           });
-          resolve({ r: result });
+          resolve({ results });
         });
         break;
       case 'cupHistoryActions':
