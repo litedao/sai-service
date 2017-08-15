@@ -5,7 +5,7 @@ const settings = require('./settings');
 
 let network = 'main';
 let port = 4000;
-process.argv.forEach(function (v, i) {
+process.argv.forEach((v, i) => {
   if (v === '--network' && typeof process.argv[i + 1] !== 'undefined') {
     network = process.argv[i + 1];
   }
@@ -18,7 +18,7 @@ mongoose.connect(`mongodb://localhost/sai-service-${network}`, { useMongoClient:
   if (!e) {
     var http = require('http');
 
-    http.createServer(function (req, res) {
+    http.createServer((req, res) => {
       let ret = '';
       const p = prom(req.url);
       Promise.resolve(p).then((ret) => {
@@ -45,7 +45,7 @@ const prom = (url) => {
         const param = urlParts[i].split('=');
         if (['conditions', 'sort', 'skip', 'limit'].indexOf(param[0]) !== -1) {
           if (param[0] === 'conditions') {
-            param[1].split('&').forEach(function (v) {
+            param[1].split('&').forEach((v) => {
               const keyVal = v.split(':');
               if (keyVal.length === 2) {
                 const value = keyVal[1].match(/^\d+$/) ? parseInt(keyVal[1], 10) : (keyVal[1] === 'true' ? true : (keyVal[1] === 'false' ? false : keyVal[1]));
@@ -65,7 +65,7 @@ const prom = (url) => {
               }
             });
           } else if (param[0] === 'sort') {
-            param[1].split('&').forEach(function (v) {
+            param[1].split('&').forEach((v) => {
               const keyVal = v.split(':');
               if (keyVal.length === 2 && (keyVal[1] === 'asc' || keyVal[1] === 'desc')) {
                 const value = keyVal[1] === 'asc' ? 1 : -1;
