@@ -130,29 +130,29 @@ const executeSync = (tub, tap, jar, tip, med) => {
     }
   });
 
-  Per.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
-    if (!e) {
-      tap.LogNote({ sig: [methodSig('boom(uint128)'), methodSig('bust(uint128)')] }, { fromBlock: (r.length === 0 ? 0 : r[0].last_block + 1) }, (e2, r2) => {
-        if (!e2) {
-          web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
-            if (!e3) {
-              jar.per((e4, r4) => {
-                if (!e4) {
-                  Per.collection.insert({ value: web3.toBigNumber(r4).toNumber(), last_block: r2.blockNumber, timestamp: r3.timestamp });
-                  Var.collection.update({ name: 'per' },
-                                  {
-                                    name: 'per',
-                                    value: web3.toBigNumber(r4).div(1000000000).toNumber(),
-                                  },
-                                  { upsert: true });
-                }
-              });
-            }
-          });
-        }
-      });
-    }
-  });
+  // Per.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
+  //   if (!e) {
+  //     tap.LogNote({ sig: [methodSig('boom(uint128)'), methodSig('bust(uint128)')] }, { fromBlock: (r.length === 0 ? 0 : r[0].last_block + 1) }, (e2, r2) => {
+  //       if (!e2) {
+  //         web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
+  //           if (!e3) {
+  //             jar.per(r2.blockNumber, (e4, r4) => {
+  //               if (!e4) {
+  //                 Per.collection.insert({ value: web3.toBigNumber(r4).toNumber(), last_block: r2.blockNumber, timestamp: r3.timestamp });
+  //                 Var.collection.update({ name: 'per' },
+  //                                 {
+  //                                   name: 'per',
+  //                                   value: web3.toBigNumber(r4).div(1000000000).toNumber(),
+  //                                 },
+  //                                 { upsert: true });
+  //               }
+  //             });
+  //           }
+  //         });
+  //       }
+  //     });
+  //   }
+  // });
 
   Pip.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
     if (!e) {
@@ -206,6 +206,17 @@ const executeSync = (tub, tap, jar, tip, med) => {
                                     value: r[1] ? web3.toBigNumber(r[0]).toNumber() : 0,
                                   },
                                   { upsert: true });
+      }
+    });
+
+    jar.per((e, r) => {
+      if (!e) {
+        Var.collection.update({ name: 'per' },
+                        {
+                          name: 'per',
+                          value: web3.toBigNumber(r).div(1000000000).toNumber(),
+                        },
+                        { upsert: true });
       }
     });
   }, 5000);
