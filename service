@@ -98,21 +98,21 @@ const prom = (url) => {
           }
         });
         break;
-      // case 'pers':
-      //   mongoose.model('Per').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
-      //     if (!e) {
-      //       mongoose.model('Per').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
-      //         if (!e2) {
-      //           resolve({ last_block: r2 && r2[0] ? r2[0].last_block : 0, results: r });
-      //         } else {
-      //           reject(e2);
-      //         }
-      //       });
-      //     } else {
-      //       reject(e);
-      //     }
-      //   });
-      //   break;
+      case 'pers':
+        mongoose.model('Per').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
+          if (!e) {
+            mongoose.model('Per').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
+              if (!e2) {
+                resolve({ last_block: r2 && r2[0] ? r2[0].last_block : 0, results: r });
+              } else {
+                reject(e2);
+              }
+            });
+          } else {
+            reject(e);
+          }
+        });
+        break;
       case 'pips':
         mongoose.model('Pip').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
           if (!e) {

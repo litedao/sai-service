@@ -43,6 +43,8 @@ const Per = new Schema(
     "value": Number,
     "last_block": Number,
     "timestamp": Number,
+    "totSkr": String,
+    "jarGem": String,
   });
 mongoose.model('Per', Per);
 
