@@ -16,11 +16,10 @@ web3.setProvider(new Web3.providers.HttpProvider(`http://localhost:${port}`));
 
 console.log(`MongoDB syncing from http://localhost:${port}`);
 
-const topAbi = require('./abi/top').abi;
-const tubAbi = require('./abi/tub').abi;
-const tapAbi = require('./abi/tap').abi;
-const jarAbi = require('./abi/jar').abi;
-const tipAbi = require('./abi/tip').abi;
+const topAbi = require('./abi/saitop').abi;
+const tubAbi = require('./abi/saitub').abi;
+const tapAbi = require('./abi/saitap').abi;
+const voxAbi = require('./abi/saivox').abi;
 const tokAbi = require('./abi/dstoken').abi;
 const medAbi = require('./abi/medianizer').abi;
 
@@ -65,32 +64,26 @@ const getAddress = (object, name) => {
 
 const init = (network) => {
   const top = web3.eth.contract(topAbi).at(settings.chain[network].top);
-  const promises = [getAddress(top, 'tub'), getAddress(top, 'tap'), getAddress(top, 'gem'), getAddress(top, 'skr')];
+  const promises = [getAddress(top, 'tub'), getAddress(top, 'tap'), getAddress(top, 'vox'), getAddress(top, 'gem'), getAddress(top, 'skr')];
   Promise.all(promises).then((r) => {
-    if (r[0] && r[1] && r[2] && r[3] && web3.isAddress(r[0]) && web3.isAddress(r[1]) && web3.isAddress(r[2]) && web3.isAddress(r[3])) {
+    if (r[0] && r[1] && r[2] && r[3] && r[4] && web3.isAddress(r[0]) && web3.isAddress(r[1]) && web3.isAddress(r[2]) && web3.isAddress(r[3]) && web3.isAddress(r[4])) {
       const tub = web3.eth.contract(tubAbi).at(r[0]);
       const tap = web3.eth.contract(tapAbi).at(r[1]);
-      const gem = web3.eth.contract(tokAbi).at(r[2]);
-      const skr = web3.eth.contract(tokAbi).at(r[3]);
-      const promises2 = [getAddress(tub, 'jar'), getAddress(tub, 'tip')];
-      Promise.all(promises2).then((r2) => {
-        if (r2[0] && r2[1] && web3.isAddress(r2[0]) && web3.isAddress(r2[1])) {
-          const jar = web3.eth.contract(jarAbi).at(r2[0]);
-          const tip = web3.eth.contract(tipAbi).at(r2[1]);
-          const promise = getAddress(jar, 'pip');
-          Promise.resolve(promise).then((r3) => {
-            if (r3 && web3.isAddress(r3)) {
-              const med = web3.eth.contract(medAbi).at(r3);
-              executeSync(tub, tap, gem, skr, jar, tip, med);
-            }
-          });
+      const vox = web3.eth.contract(voxAbi).at(r[2]);
+      const gem = web3.eth.contract(tokAbi).at(r[3]);
+      const skr = web3.eth.contract(tokAbi).at(r[4]);
+      const promise = getAddress(tub, 'pip');
+      Promise.resolve(promise).then((r2) => {
+        if (r2 && web3.isAddress(r2)) {
+          const med = web3.eth.contract(medAbi).at(r2);
+          executeSync(tub, tap, gem, skr, vox, med);
         }
       });
     }
   });
 }
 
-const executeSync = (tub, tap, gem, skr, jar, tip, med) => {
+const executeSync = (tub, tap, gem, skr, vox, med) => {
   const Var = mongoose.model('Var');
   const Way = mongoose.model('Way');
   const Mat = mongoose.model('Mat');
@@ -101,11 +94,12 @@ const executeSync = (tub, tap, gem, skr, jar, tip, med) => {
 
   Way.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
     if (!e) {
-      tip.LogNote({ sig: methodSig('coax(uint128)') }, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
+      // 0x7761790000000000000000000000000000000000000000000000000000000000: 'way' in bytes32
+      vox.LogNote({ sig: methodSig('mold(bytes32,uint256)'), foo: '0x7761790000000000000000000000000000000000000000000000000000000000' }, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
         if (!e2) {
           web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
             if (!e3) {
-              Way.collection.insert({ value: web3.toBigNumber(r2.args.foo).toNumber(), last_block: r2.blockNumber, timestamp: r3.timestamp });
+              Way.collection.insert({ value: web3.toBigNumber(r2.args.bar).toNumber(), last_block: r2.blockNumber, timestamp: r3.timestamp });
             }
           });
         }
@@ -115,15 +109,16 @@ const executeSync = (tub, tap, gem, skr, jar, tip, med) => {
 
   Mat.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
     if (!e) {
-      tub.LogNote({ sig: methodSig('cuff(uint128)') }, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
+      // 0x6d61740000000000000000000000000000000000000000000000000000000000: 'mat' in bytes32
+      tub.LogNote({ sig: methodSig('mold(bytes32,uint256)'), foo: '0x6d61740000000000000000000000000000000000000000000000000000000000' }, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
         if (!e2) {
           web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
             if (!e3) {
-              Mat.collection.insert({ value: web3.toBigNumber(r2.args.foo).toNumber(), last_block: r2.blockNumber, timestamp: r3.timestamp });
+              Mat.collection.insert({ value: web3.toBigNumber(r2.args.bar).toNumber(), last_block: r2.blockNumber, timestamp: r3.timestamp });
               Var.collection.update({ name: 'mat' },
                                   {
                                     name: 'mat',
-                                    value: web3.toBigNumber(r2.args.foo).div(1000000000).toNumber(),
+                                    value: web3.toBigNumber(r2.args.bar).div(1000000000).toNumber(),
                                   },
                                   { upsert: true });
             }
@@ -136,10 +131,10 @@ const executeSync = (tub, tap, gem, skr, jar, tip, med) => {
   var persQueue = new Queue();
   Per.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
     if (!e) {
-      tap.LogNote({ sig: [methodSig('boom(uint128)'), methodSig('bust(uint128)')] }, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
+      tap.LogNote({ sig: [methodSig('boom(uint256)'), methodSig('bust(uint256)')] }, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
         if (!e2) {
           persQueue.place(() =>
-            getPerValues(Per, jar, skr, gem, persQueue)
+            getPerValues(Per, tub, skr, gem, persQueue)
           );
         }
       });
@@ -178,12 +173,12 @@ const executeSync = (tub, tap, gem, skr, jar, tip, med) => {
       }
     });
 
-    tip.par.call((e, r) => {
+    vox.par.call((e, r) => {
       if (!e) {
         Var.collection.update({ name: 'par' },
                                   {
                                     name: 'par',
-                                    value: r.toNumber(),
+                                    value: r.div(1000000000).toNumber(),
                                   },
                                   { upsert: true });
       }
@@ -201,7 +196,7 @@ const executeSync = (tub, tap, gem, skr, jar, tip, med) => {
       }
     });
 
-    jar.per((e, r) => {
+    tub.per((e, r) => {
       if (!e) {
         Var.collection.update({ name: 'per' },
                         {
@@ -255,7 +250,7 @@ const executeSync = (tub, tap, gem, skr, jar, tip, med) => {
                                       }, {}, () => insertCupHistoryAction(CupHistoryAction, cupsQueue, 'give', web3.toBigNumber(r2.topics[2]).toNumber(), '0x' + r2.topics[1].substring(26), '0x' + r2.topics[3].substring(26), r2.blockNumber, r3.timestamp, r2.transactionHash));
                   break;
                 default:
-                  const methods = ['lock(bytes32,uint128)', 'free(bytes32,uint128)', 'draw(bytes32,uint128)', 'wipe(bytes32,uint128)', 'bite(bytes32)'];
+                  const methods = ['lock(bytes32,uint256)', 'free(bytes32,uint256)', 'draw(bytes32,uint256)', 'wipe(bytes32,uint256)', 'bite(bytes32)'];
                   let action = null;
                   let cupi = null;
                   let param = null;
@@ -308,13 +303,13 @@ const insertCupHistoryAction = (CupHistoryAction, cupsQueue, action, cupi, sende
                                     );
 }
 
-const getPerValues = (Per, jar, skr, gem, persQueue) => {
+const getPerValues = (Per, tub, skr, gem, persQueue) => {
   Per.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
     if (!e) {
       const fromBlock = (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1);
-      const promises = [getLogs(skr, 'LogNote', { sig: [methodSig('mint(uint128)'), methodSig('burn(uint128)')] }, fromBlock),
-                        getLogs(gem, 'Transfer', { from: jar.address }, fromBlock),
-                        getLogs(gem, 'Transfer', { to: jar.address }, fromBlock)];
+      const promises = [getLogs(skr, 'LogNote', { sig: [methodSig('mint(uint256)'), methodSig('burn(uint256)')] }, fromBlock),
+                        getLogs(gem, 'Transfer', { from: tub.address }, fromBlock),
+                        getLogs(gem, 'Transfer', { to: tub.address }, fromBlock)];
 
       const perResults = {};
       Promise.all(promises).then((r2) => {
@@ -323,7 +318,7 @@ const getPerValues = (Per, jar, skr, gem, persQueue) => {
             if (typeof perResults[value.blockNumber] === 'undefined') {
               perResults[value.blockNumber] = { skr : { amount: 0, add: {}, del: {} }, gem : { amount: 0, add: {}, del: {} }  }
             }
-            perResults[value.blockNumber].skr[value.args.sig === methodSig('mint(uint128)') ? 'add' : 'del'] = value;
+            perResults[value.blockNumber].skr[value.args.sig === methodSig('mint(uint256)') ? 'add' : 'del'] = value;
           });
           r2[1].forEach(value => {
             if (typeof perResults[value.blockNumber] === 'undefined') {
@@ -338,7 +333,7 @@ const getPerValues = (Per, jar, skr, gem, persQueue) => {
             perResults[value.blockNumber].gem.add = value;
           });
           let skrBigNum = web3.toBigNumber(r.length === 0 ? 0 : r[0].totSkr);
-          let gemBigNum = web3.toBigNumber(r.length === 0 ? 0 : r[0].jarGem);
+          let gemBigNum = web3.toBigNumber(r.length === 0 ? 0 : r[0].tubGem);
           const promisesInsert = [];
           Object.keys(perResults).map(key => {
             const value = perResults[key];
@@ -348,8 +343,8 @@ const getPerValues = (Per, jar, skr, gem, persQueue) => {
             gemBigNum = gemBigNum.minus(typeof value.gem.del.args !== 'undefined' ? value.gem.del.args.value : 0);
             const per = gemBigNum.div(skrBigNum).times(web3.toBigNumber(10).pow(18)).toNumber();
             const totSkr = skrBigNum.valueOf();
-            const jarGem = gemBigNum.valueOf();
-            promisesInsert.push(insertPer(Per, per, key, totSkr, jarGem));
+            const tubGem = gemBigNum.valueOf();
+            promisesInsert.push(insertPer(Per, per, key, totSkr, tubGem));
           });
           Promise.all(promisesInsert).then(() => {
             persQueue.next();
@@ -364,11 +359,11 @@ const getPerValues = (Per, jar, skr, gem, persQueue) => {
   });
 }
 
-const insertPer = (Per, value, blockNumber, totSkr, jarGem) => {
+const insertPer = (Per, value, blockNumber, totSkr, tubGem) => {
   return new Promise((resolve, reject) => {
     web3.eth.getBlock(blockNumber, (e, r) => {
       if (!e) {
-        Per.collection.insert({ value, last_block: blockNumber, timestamp: r.timestamp, totSkr, jarGem }, () => {
+        Per.collection.insert({ value, last_block: blockNumber, timestamp: r.timestamp, totSkr, tubGem }, () => {
           resolve(r);
         });
       } else {

@@ -44,7 +44,7 @@ const Per = new Schema(
     "last_block": Number,
     "timestamp": Number,
     "totSkr": String,
-    "jarGem": String,
+    "tubGem": String,
   });
 mongoose.model('Per', Per);
 
