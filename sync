@@ -173,6 +173,17 @@ const executeSync = (tub, tap, gem, skr, vox, med) => {
       }
     });
 
+    tub.rhi.call((e, r) => {
+      if (!e) {
+        Var.collection.update({ name: 'rhi' },
+                                {
+                                  name: 'rhi',
+                                  value: r.div(1000000000).toNumber(),
+                                },
+                                { upsert: true });
+      }
+    });
+
     vox.par.call((e, r) => {
       if (!e) {
         Var.collection.update({ name: 'par' },
