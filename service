@@ -2,6 +2,7 @@
 
 const mongoose = require('./schema.js').mongoose;
 const settings = require('./settings');
+const { exec } = require('child_process');
 
 let network = 'main';
 let port = 4000;
@@ -14,23 +15,24 @@ process.argv.forEach((v, i) => {
   }
 });
 
-mongoose.connect(`mongodb://localhost/sai-service-${network}`, { useMongoClient: true }, (e) => {
-  if (!e) {
-    var http = require('http');
+exec('git rev-parse --abbrev-ref HEAD', function(err, branch, stderr) {
+  mongoose.connect(`mongodb://localhost/sai-service-${network}-${branch.trim()}`, { useMongoClient: true }, (e) => {
+    if (!e) {
+      var http = require('http');
 
-    http.createServer((req, res) => {
-      let ret = '';
-      const p = prom(req.url);
-      Promise.resolve(p).then((ret) => {
-        res.setHeader('Access-Control-Allow-Origin', settings.cors);
-        res.writeHead(200, {'Content-Type': 'application/json'});
-        res.end(JSON.stringify(ret));
-      });
-    }).listen(port);
-  }
+      http.createServer((req, res) => {
+        let ret = '';
+        const p = prom(req.url);
+        Promise.resolve(p).then((ret) => {
+          res.setHeader('Access-Control-Allow-Origin', settings.cors);
+          res.writeHead(200, {'Content-Type': 'application/json'});
+          res.end(JSON.stringify(ret));
+        });
+      }).listen(port);
+    }
+  });
+  console.log(`Server running on port ${port}, reading from DB: sai-service-${network}-${branch.trim()}`);
 });
- 
-console.log(`Server running on port ${port}, reading from DB: sai-service-${network}`);
 
 const prom = (url) => {
   const p = new Promise((resolve, reject) => {
