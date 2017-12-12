@@ -77,8 +77,8 @@ const init = (network) => {
       const vox = web3.eth.contract(voxAbi).at(r[2]);
       const gem = web3.eth.contract(tokAbi).at(r[3]);
       const skr = web3.eth.contract(tokAbi).at(r[4]);
-      const promises = [getAddress(tub, 'pip'), getAddress(tub, 'pep')];
-      Promise.resolve(promises).then((r2) => {
+      const promises2 = [getAddress(tub, 'pip'), getAddress(tub, 'pep')];
+      Promise.all(promises2).then((r2) => {
         if (r2[0] && web3.isAddress(r2[0]) && r2[1] && web3.isAddress(r2[1])) {
           const pip = web3.eth.contract(medAbi).at(r2[0]);
           const pep = web3.eth.contract(medAbi).at(r2[1]);
@@ -89,12 +89,13 @@ const init = (network) => {
   });
 }
 
-const executeSync = (tub, tap, gem, skr, vox, pip) => {
+const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
   const Var = mongoose.model('Var');
   const Way = mongoose.model('Way');
   const Mat = mongoose.model('Mat');
   const Per = mongoose.model('Per');
   const Pip = mongoose.model('Pip');
+  const Pep = mongoose.model('Pep');
   const Cup = mongoose.model('Cup');
   const CupHistoryAction = mongoose.model('CupHistoryAction');
 
