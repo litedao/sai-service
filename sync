@@ -72,18 +72,19 @@ const init = (network) => {
       const vox = web3.eth.contract(voxAbi).at(r[2]);
       const gem = web3.eth.contract(tokAbi).at(r[3]);
       const skr = web3.eth.contract(tokAbi).at(r[4]);
-      const promise = getAddress(tub, 'pip');
+      const promises = [getAddress(tub, 'pip'), getAddress(tub, 'pep')];
       Promise.resolve(promise).then((r2) => {
-        if (r2 && web3.isAddress(r2)) {
-          const med = web3.eth.contract(medAbi).at(r2);
-          executeSync(tub, tap, gem, skr, vox, med);
+        if (r2[0] && web3.isAddress(r2[0]) && r2[1] && web3.isAddress(r2[1])) {
+          const pip = web3.eth.contract(medAbi).at(r2[0]);
+          const pep = web3.eth.contract(medAbi).at(r2[1]);
+          executeSync(tub, tap, gem, skr, vox, pip, pep);
         }
       });
     }
   });
 }
 
-const executeSync = (tub, tap, gem, skr, vox, med) => {
+const executeSync = (tub, tap, gem, skr, vox, pip) => {
   const Var = mongoose.model('Var');
   const Way = mongoose.model('Way');
   const Mat = mongoose.model('Mat');
@@ -143,7 +144,7 @@ const executeSync = (tub, tap, gem, skr, vox, med) => {
 
   Pip.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
     if (!e) {
-      med.LogValue({}, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
+      pip.LogValue({}, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
         if (!e2) {
           web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
             if (!e3) {
@@ -151,6 +152,26 @@ const executeSync = (tub, tap, gem, skr, vox, med) => {
               Var.collection.update({ name: 'pip' },
                                 {
                                   name: 'pip',
+                                  value: web3.toBigNumber(r2.args.val).toNumber(),
+                                },
+                                { upsert: true });
+            }
+          });
+        }
+      });
+    }
+  });
+
+  Pep.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
+    if (!e) {
+      pep.LogValue({}, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
+        if (!e2) {
+          web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
+            if (!e3) {
+              Pep.collection.insert({ value: r2.args.val !== '0x' ? web3.toBigNumber(r2.args.val).toNumber() : null, last_block: r2.blockNumber, timestamp: r3.timestamp });
+              Var.collection.update({ name: 'pep' },
+                                {
+                                  name: 'pep',
                                   value: web3.toBigNumber(r2.args.val).toNumber(),
                                 },
                                 { upsert: true });
@@ -196,7 +217,7 @@ const executeSync = (tub, tap, gem, skr, vox, med) => {
     });
 
     // This is necessary temporarily for mainnet as there is not LogValue working
-    med.peek.call((e, r) => {
+    pip.peek.call((e, r) => {
       if (!e) {
         Var.collection.update({ name: 'pip' },
                                   {
