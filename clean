@@ -11,24 +11,21 @@ process.argv.forEach(function (v, i) {
   }
 });
 
-exec('git rev-parse --abbrev-ref HEAD', function(err, response, stderr) {
-  const branch = response.trim().replace('.', '');
-  console.log(`Cleaning DB sai-service-${network}-${branch}...`);
+console.log(`Cleaning DB sai-service-${network}-${settings.version}...`);
 
-  mongoose.connect(`mongodb://localhost/sai-service-${network}-${branch}`, { useMongoClient: true }, (e, db) => {
-    const deleteDB = (name) => {
-      return new Promise((resolve, reject) => {
-        db.collection(name).drop((e, r) => {
-          resolve(e || !r ? `${name} collection not found` : `${name} collection deleted`);
-        });
+mongoose.connect(`mongodb://localhost/sai-service-${network}-${settings.version}`, { useMongoClient: true }, (e, db) => {
+  const deleteDB = (name) => {
+    return new Promise((resolve, reject) => {
+      db.collection(name).drop((e, r) => {
+        resolve(e || !r ? `${name} collection not found` : `${name} collection deleted`);
       });
-    }
-    if (!e) {
-      const promises = [deleteDB('vars'), deleteDB('pips'), deleteDB('ways'), deleteDB('mats'), deleteDB('pers'), deleteDB('cups'), deleteDB('cuphistoryactions')];
-      Promise.all(promises).then((r) => {
-        r.forEach(value => console.log(value));
-        process.exit();
-      });
-    }
-  });
+    });
+  }
+  if (!e) {
+    const promises = [deleteDB('vars'), deleteDB('pips'), deleteDB('ways'), deleteDB('mats'), deleteDB('pers'), deleteDB('cups'), deleteDB('cuphistoryactions')];
+    Promise.all(promises).then((r) => {
+      r.forEach(value => console.log(value));
+      process.exit();
+    });
+  }
 });

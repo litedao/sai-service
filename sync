@@ -24,30 +24,27 @@ const voxAbi = require('./abi/saivox').abi;
 const tokAbi = require('./abi/dstoken').abi;
 const medAbi = require('./abi/medianizer').abi;
 
-exec('git rev-parse --abbrev-ref HEAD', function(err, response, stderr) {
-  const branch = response.trim().replace('.', '');
-  web3.eth.getBlock(0, (e, res) => {
-    let network = false;
-    if (!e) {
-      switch (res.hash) {
-        case '0xa3c565fc15c7478862d50ccd6561e3c06b24cc509bf388941c25ea985ce32cb9':
-          network = 'kovan';
-          break;
-        case '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3':
-          network = 'main';
-          break;
-        default:
-          network = 'private';
-      }
-      console.log(`${network} network detected`);
-      console.log(`Using DB: sai-service-${network}-${branch}`);
-      mongoose.connect(`mongodb://localhost/sai-service-${network}-${branch}`, { useMongoClient: true }, (e) => {
-        if (!e) {
-          init(network);
-        }
-      });
+web3.eth.getBlock(0, (e, res) => {
+  let network = false;
+  if (!e) {
+    switch (res.hash) {
+      case '0xa3c565fc15c7478862d50ccd6561e3c06b24cc509bf388941c25ea985ce32cb9':
+        network = 'kovan';
+        break;
+      case '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3':
+        network = 'main';
+        break;
+      default:
+        network = 'private';
     }
-  });
+    console.log(`${network} network detected`);
+    console.log(`Using DB: sai-service-${network}-${settings.version}`);
+    mongoose.connect(`mongodb://localhost/sai-service-${network}-${settings.version}`, { useMongoClient: true }, (e) => {
+      if (!e) {
+        init(network);
+      }
+    });
+  }
 });
 
 const methodSig = (method) => {
