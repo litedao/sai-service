@@ -78,7 +78,7 @@ const init = (network) => {
       const gem = web3.eth.contract(tokAbi).at(r[3]);
       const skr = web3.eth.contract(tokAbi).at(r[4]);
       const promises = [getAddress(tub, 'pip'), getAddress(tub, 'pep')];
-      Promise.resolve(promise).then((r2) => {
+      Promise.resolve(promises).then((r2) => {
         if (r2[0] && web3.isAddress(r2[0]) && r2[1] && web3.isAddress(r2[1])) {
           const pip = web3.eth.contract(medAbi).at(r2[0]);
           const pep = web3.eth.contract(medAbi).at(r2[1]);
