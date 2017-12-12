@@ -25,7 +25,8 @@ const tipAbi = require('./abi/tip').abi;
 const tokAbi = require('./abi/dstoken').abi;
 const medAbi = require('./abi/medianizer').abi;
 
-exec('git rev-parse --abbrev-ref HEAD', function(err, branch, stderr) {
+exec('git rev-parse --abbrev-ref HEAD', function(err, response, stderr) {
+  const branch = response.trim().replace('.', '');
   web3.eth.getBlock(0, (e, res) => {
     let network = false;
     if (!e) {
@@ -40,8 +41,8 @@ exec('git rev-parse --abbrev-ref HEAD', function(err, branch, stderr) {
           network = 'private';
       }
       console.log(`${network} network detected`);
-      console.log(`Using DB: sai-service-${network}-${branch.trim()}`);
-      mongoose.connect(`mongodb://localhost/sai-service-${network}-${branch.trim()}`, { useMongoClient: true }, (e) => {
+      console.log(`Using DB: sai-service-${network}-${branch}`);
+      mongoose.connect(`mongodb://localhost/sai-service-${network}-${branch}`, { useMongoClient: true }, (e) => {
         if (!e) {
           init(network);
         }

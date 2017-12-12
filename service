@@ -15,8 +15,9 @@ process.argv.forEach((v, i) => {
   }
 });
 
-exec('git rev-parse --abbrev-ref HEAD', function(err, branch, stderr) {
-  mongoose.connect(`mongodb://localhost/sai-service-${network}-${branch.trim()}`, { useMongoClient: true }, (e) => {
+exec('git rev-parse --abbrev-ref HEAD', function(err, response, stderr) {
+  const branch = response.trim().replace('.', '');
+  mongoose.connect(`mongodb://localhost/sai-service-${network}-${branch}`, { useMongoClient: true }, (e) => {
     if (!e) {
       var http = require('http');
 
@@ -31,7 +32,7 @@ exec('git rev-parse --abbrev-ref HEAD', function(err, branch, stderr) {
       }).listen(port);
     }
   });
-  console.log(`Server running on port ${port}, reading from DB: sai-service-${network}-${branch.trim()}`);
+  console.log(`Server running on port ${port}, reading from DB: sai-service-${network}-${branch}`);
 });
 
 const prom = (url) => {
