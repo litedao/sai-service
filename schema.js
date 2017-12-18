@@ -19,6 +19,15 @@ const Pip = new Schema(
   });
 mongoose.model('Pip', Pip);
 
+// Pip: USD/MKR
+const Pep = new Schema(
+  {
+    "value": Number,
+    "last_block": Number,
+    "timestamp": Number,
+  });
+mongoose.model('Pep', Pep);
+
 // Way: USD/SAI
 const Way = new Schema(
   {
@@ -44,7 +53,7 @@ const Per = new Schema(
     "last_block": Number,
     "timestamp": Number,
     "totSkr": String,
-    "jarGem": String,
+    "tubGem": String,
   });
 mongoose.model('Per', Per);
 
