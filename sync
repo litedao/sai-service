@@ -65,7 +65,13 @@ const getAddress = (object, name) => {
 }
 
 const init = (network) => {
+  if (!settings.chain[network].top) {
+    console.log('top address is missing in settings.json for chain: ' + network);
+    console.log('exiting...');
+    process.exit();
+  }
   const top = web3.eth.contract(topAbi).at(settings.chain[network].top);
+  console.log('TOP: ', top.address);
   const promises = [getAddress(top, 'tub'), getAddress(top, 'tap'), getAddress(top, 'vox'), getAddress(top, 'gem'), getAddress(top, 'skr')];
   Promise.all(promises).then((r) => {
     if (r[0] && r[1] && r[2] && r[3] && r[4] && web3.isAddress(r[0]) && web3.isAddress(r[1]) && web3.isAddress(r[2]) && web3.isAddress(r[3]) && web3.isAddress(r[4])) {
@@ -74,15 +80,26 @@ const init = (network) => {
       const vox = web3.eth.contract(voxAbi).at(r[2]);
       const gem = web3.eth.contract(tokAbi).at(r[3]);
       const skr = web3.eth.contract(tokAbi).at(r[4]);
+      console.log('TUB: ', tub.address);
+      console.log('TAP: ', tap.address);
+      console.log('VOX: ', vox.address);
+      console.log('GEM: ', gem.address);
+      console.log('SKR: ', skr.address);
       const promises2 = [getAddress(tub, 'pip'), getAddress(tub, 'pep')];
       Promise.all(promises2).then((r2) => {
         if (r2[0] && web3.isAddress(r2[0]) && r2[1] && web3.isAddress(r2[1])) {
           const pip = web3.eth.contract(medAbi).at(r2[0]);
           const pep = web3.eth.contract(medAbi).at(r2[1]);
+          console.log('PIP: ', pip.address);
+          console.log('PEP: ', pep.address);
           executeSync(tub, tap, gem, skr, vox, pip, pep);
         }
       });
     }
+  }, e => {
+    console.log('error initiating system: ', e);
+    console.log('exiting...');
+    process.exit();
   });
 }
 
@@ -101,11 +118,17 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
       // 0x7761790000000000000000000000000000000000000000000000000000000000: 'way' in bytes32
       vox.LogNote({ sig: methodSig('mold(bytes32,uint256)'), foo: '0x7761790000000000000000000000000000000000000000000000000000000000' }, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
         if (!e2) {
+          console.log('way log: ', r2);
           web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
             if (!e3) {
+              console.log('way log get block: ', r3);
               Way.collection.insert({ value: web3.toBigNumber(r2.args.bar).toNumber(), last_block: r2.blockNumber, timestamp: r3.timestamp });
+            } else {
+              console.log('way log get block error: ', e3);
             }
           });
+        } else {
+          console.log('way log error: ', e2);
         }
       });
     }
@@ -116,8 +139,10 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
       // 0x6d61740000000000000000000000000000000000000000000000000000000000: 'mat' in bytes32
       tub.LogNote({ sig: methodSig('mold(bytes32,uint256)'), foo: '0x6d61740000000000000000000000000000000000000000000000000000000000' }, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
         if (!e2) {
+          console.log('mat log: ', r2);
           web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
             if (!e3) {
+              console.log('mat log get block: ', r3);
               Mat.collection.insert({ value: web3.toBigNumber(r2.args.bar).toNumber(), last_block: r2.blockNumber, timestamp: r3.timestamp });
               Var.collection.update({ name: 'mat' },
                                   {
@@ -125,8 +150,12 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
                                     value: web3.toBigNumber(r2.args.bar).div(1000000000).toNumber(),
                                   },
                                   { upsert: true });
-            }
+              } else {
+                console.log('mat log get block error: ', e3);
+              }
           });
+        } else {
+          console.log('mat log error: ', e2);
         }
       });
     }
@@ -137,9 +166,12 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
     if (!e) {
       tap.LogNote({ sig: [methodSig('boom(uint256)'), methodSig('bust(uint256)')] }, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
         if (!e2) {
+          console.log('per log: ', r2);
           persQueue.place(() =>
             getPerValues(Per, tub, skr, gem, persQueue)
           );
+        } else {
+          console.log('per log error: ', e2);
         }
       });
     }
@@ -149,8 +181,10 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
     if (!e) {
       pip.LogValue({}, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
         if (!e2) {
+          console.log('pip log: ', r2);
           web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
             if (!e3) {
+              console.log('pip log get block: ', r3);
               Pip.collection.insert({ value: r2.args.val !== '0x' ? web3.toBigNumber(r2.args.val).toNumber() : null, last_block: r2.blockNumber, timestamp: r3.timestamp });
               Var.collection.update({ name: 'pip' },
                                 {
@@ -158,8 +192,12 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
                                   value: web3.toBigNumber(r2.args.val).toNumber(),
                                 },
                                 { upsert: true });
+            } else {
+              console.log('pip log get block error: ', e3);
             }
           });
+        } else {
+          console.log('pip log error: ', e2);
         }
       });
     }
@@ -169,8 +207,10 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
     if (!e) {
       pep.LogValue({}, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
         if (!e2) {
+          console.log('pep log: ', r2);
           web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
             if (!e3) {
+              console.log('pep log get block: ', r3);
               Pep.collection.insert({ value: r2.args.val !== '0x' ? web3.toBigNumber(r2.args.val).toNumber() : null, last_block: r2.blockNumber, timestamp: r3.timestamp });
               Var.collection.update({ name: 'pep' },
                                 {
@@ -178,8 +218,12 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
                                   value: web3.toBigNumber(r2.args.val).toNumber(),
                                 },
                                 { upsert: true });
+            } else {
+              console.log('pep log get block error: ', e3);
             }
           });
+        } else {
+          console.log('pep log error: ', e2);
         }
       });
     }
@@ -247,9 +291,11 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
   Cup.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
     web3.eth.filter({ fromBlock: (r.length === 0 ? 0 : r[0].last_block), address: tub.address }, (e2, r2) => {
       if (!e2) {
+        console.log('cup log: ', r2);
         cupsQueue.place(() =>
           web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
             if (!e3) {
+              console.log('cup log get block: ', r3);
               switch (r2.topics[0]) {
                 case web3.sha3('LogNewCup(address,bytes32)'):
                   Cup.collection.update({ cupi: web3.toBigNumber(r2.data).toNumber() },
@@ -313,9 +359,13 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
                   }
                   break;
               }
+            } else {
+              console.log('cup log get block error: ', e3);
             }
           })
         );
+      } else {
+        console.log('cup log error: ', e2);
       }
     });
   });
@@ -347,7 +397,7 @@ const getPerValues = (Per, tub, skr, gem, persQueue) => {
                         getLogs(gem, 'Transfer', { to: tub.address }, fromBlock)];
 
       const perResults = {};
-      Promise.all(promises).then((r2) => {
+      Promise.all(promises).then(r2 => {
         if (r2[0] && r2[1] && r2[2]) {
           r2[0].forEach(value => {
             if (typeof perResults[value.blockNumber] === 'undefined') {
@@ -383,10 +433,14 @@ const getPerValues = (Per, tub, skr, gem, persQueue) => {
           });
           Promise.all(promisesInsert).then(() => {
             persQueue.next();
+          }, e3 => {
+            console.log('error insert per values: ', e3)
           });
         } else {
           persQueue.next();
         }
+      }, e2 => {
+        console.log('error get logs per values: ', e2)
       });
     } else {
       persQueue.next();
