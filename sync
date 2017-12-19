@@ -150,9 +150,9 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
                                     value: web3.toBigNumber(r2.args.bar).div(1000000000).toNumber(),
                                   },
                                   { upsert: true });
-              } else {
-                console.log('mat log get block error: ', e3);
-              }
+            } else {
+              console.log('mat log get block error: ', e3);
+            }
           });
         } else {
           console.log('mat log error: ', e2);
