@@ -22,7 +22,7 @@ mongoose.connect(`mongodb://localhost/sai-service-${network}-${settings.version}
     });
   }
   if (!e) {
-    const promises = [deleteDB('vars'), deleteDB('pips'), deleteDB('ways'), deleteDB('mats'), deleteDB('pers'), deleteDB('cups'), deleteDB('cuphistoryactions')];
+    const promises = [deleteDB('vars'), deleteDB('pips'), deleteDB('peps'), deleteDB('ways'), deleteDB('mats'), deleteDB('pers'), deleteDB('cups'), deleteDB('cuphistoryactions')];
     Promise.all(promises).then((r) => {
       r.forEach(value => console.log(value));
       process.exit();
