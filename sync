@@ -412,19 +412,28 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
     });
   }
 
-  getCups().then(fromBlock => {
-    console.log('Initial cups load done successfully');
-    console.log(`Setting up filter from block ${fromBlock}...`);
-    var getCupsQueue = new Queue();
-    web3.eth.filter({ fromBlock , address: tub.address }, e2 => {
-      if (!e2) {
-        console.log('New cup action detected, getting logs');
-        getCupsQueue.place(() =>
-          getCups().then(() => getCupsQueue.next())
-        );
-      }
+  const executeGetCups = () => {
+    getCups().then(fromBlock => {
+      console.log('Initial cups load done successfully');
+      console.log(`Setting up filter from block ${fromBlock}...`);
+      var getCupsQueue = new Queue();
+      web3.eth.filter({ fromBlock , address: tub.address }, e2 => {
+        if (!e2) {
+          console.log('New cup action detected, getting logs');
+          getCupsQueue.place(() =>
+            getCups().then(() => getCupsQueue.next())
+          );
+        }
+      });
+    }, e => { 
+      console.log('error getting initial cups load', e);
+      console.log('Re-starting initial cups load...');
+      executeGetCups();
     });
-  }, e => console.log(e));
+  }
+
+  console.log('Starting initial cups load...');
+  executeGetCups();
 }
 
 const insertCupHistoryAction = (CupHistoryAction, action, cupi, sender, param, block, timestamp, transactionHash) => {
