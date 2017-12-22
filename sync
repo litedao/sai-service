@@ -118,10 +118,9 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
       // 0x7761790000000000000000000000000000000000000000000000000000000000: 'way' in bytes32
       vox.LogNote({ sig: methodSig('mold(bytes32,uint256)'), foo: '0x7761790000000000000000000000000000000000000000000000000000000000' }, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
         if (!e2) {
-          console.log('way log: ', r2);
+          console.log('way log detected');
           web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
             if (!e3) {
-              console.log('way log get block: ', r3);
               Way.collection.insert({ value: web3.toBigNumber(r2.args.bar).toNumber(), last_block: r2.blockNumber, timestamp: r3.timestamp });
             } else {
               console.log('way log get block error: ', e3);
@@ -139,10 +138,9 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
       // 0x6d61740000000000000000000000000000000000000000000000000000000000: 'mat' in bytes32
       tub.LogNote({ sig: methodSig('mold(bytes32,uint256)'), foo: '0x6d61740000000000000000000000000000000000000000000000000000000000' }, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
         if (!e2) {
-          console.log('mat log: ', r2);
+          console.log('mat log detected');
           web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
             if (!e3) {
-              console.log('mat log get block: ', r3);
               Mat.collection.insert({ value: web3.toBigNumber(r2.args.bar).toNumber(), last_block: r2.blockNumber, timestamp: r3.timestamp });
               Var.collection.update({ name: 'mat' },
                                   {
@@ -166,7 +164,7 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
     if (!e) {
       tap.LogNote({ sig: [methodSig('boom(uint256)'), methodSig('bust(uint256)')] }, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
         if (!e2) {
-          console.log('per log: ', r2);
+          console.log('per log detected');
           persQueue.place(() =>
             getPerValues(Per, tub, skr, gem, persQueue)
           );
@@ -181,10 +179,9 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
     if (!e) {
       pip.LogValue({}, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
         if (!e2) {
-          console.log('pip log: ', r2);
+          console.log('pip log detected');
           web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
             if (!e3) {
-              console.log('pip log get block: ', r3);
               Pip.collection.insert({ value: r2.args.val !== '0x' ? web3.toBigNumber(r2.args.val).toNumber() : null, last_block: r2.blockNumber, timestamp: r3.timestamp });
               Var.collection.update({ name: 'pip' },
                                 {
@@ -207,10 +204,9 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
     if (!e) {
       pep.LogValue({}, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
         if (!e2) {
-          console.log('pep log: ', r2);
+          console.log('pep log detected');
           web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
             if (!e3) {
-              console.log('pep log get block: ', r3);
               Pep.collection.insert({ value: r2.args.val !== '0x' ? web3.toBigNumber(r2.args.val).toNumber() : null, last_block: r2.blockNumber, timestamp: r3.timestamp });
               Var.collection.update({ name: 'pep' },
                                 {
@@ -287,92 +283,153 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
     });
   }, 5000);
 
-  var cupsQueue = new Queue();
-  Cup.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
-    web3.eth.filter({ fromBlock: (r.length === 0 ? 0 : r[0].last_block), address: tub.address }, (e2, r2) => {
-      if (!e2) {
-        console.log('cup log: ', r2);
-        cupsQueue.place(() =>
-          web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
-            if (!e3) {
-              console.log('cup log get block: ', r3);
-              switch (r2.topics[0]) {
-                case web3.sha3('LogNewCup(address,bytes32)'):
-                  Cup.collection.update({ cupi: web3.toBigNumber(r2.data).toNumber() },
-                                      {
-                                        cupi: web3.toBigNumber(r2.data).toNumber(),
-                                        lad: '0x' + r2.topics[1].substring(26),
-                                        art: 0,
-                                        ink: 0,
-                                        closed: false,
-                                        last_block: r2.blockNumber
-                                      },
-                                      { upsert: true }, () => insertCupHistoryAction(CupHistoryAction, cupsQueue, 'open', web3.toBigNumber(r2.data).toNumber(), '0x' + r2.topics[1].substring(26), null, r2.blockNumber, r3.timestamp, r2.transactionHash));
-                  break;
-                case methodSig('shut(bytes32)') + '00000000000000000000000000000000000000000000000000000000':
-                  Cup.collection.update({ cupi: web3.toBigNumber(r2.topics[2]).toNumber() },
-                                      {
-                                        $set:
+  const getCups = () => {
+    return new Promise((resolve, reject) => {
+      Cup.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
+        if (!e) {
+          const filter = web3.eth.filter({ fromBlock: (r.length === 0 ? 0 : r[0].last_block), address: tub.address });
+          filter.get((e2, cupActions) => {
+            if (!e2) {
+              var cupsQueue = new Queue();
+              for (let i = 0; i < cupActions.length; i++) {
+                const cupAction = cupActions[i];
+                cupsQueue.place(() =>
+                  web3.eth.getBlock(cupAction.blockNumber, (e3, blockInfo) => {
+                    if (!e3) {
+                      switch (cupAction.topics[0]) {
+                        case web3.sha3('LogNewCup(address,bytes32)'):
+                          Cup.collection.update({ cupi: web3.toBigNumber(cupAction.data).toNumber() },
                                               {
+                                                cupi: web3.toBigNumber(cupAction.data).toNumber(),
+                                                lad: '0x' + cupAction.topics[1].substring(26),
                                                 art: 0,
                                                 ink: 0,
-                                                closed: true,
-                                                last_block: r2.blockNumber
-                                              }
-                                      }, {}, () => insertCupHistoryAction(CupHistoryAction, cupsQueue, 'shut', web3.toBigNumber(r2.topics[2]).toNumber(), '0x' + r2.topics[1].substring(26), null, r2.blockNumber, r3.timestamp, r2.transactionHash));
-                  break;
-                case methodSig('give(bytes32,address)') + '00000000000000000000000000000000000000000000000000000000':
-                  Cup.collection.update({ cupi: web3.toBigNumber(r2.topics[2]).toNumber() },
-                                      { $set:
+                                                closed: false,
+                                                last_block: cupAction.blockNumber
+                                              },
+                                              { upsert: true },
+                                              () => Promise.resolve(
+                                                      insertCupHistoryAction(CupHistoryAction, 'open', web3.toBigNumber(cupAction.data).toNumber(), '0x' + cupAction.topics[1].substring(26), null, cupAction.blockNumber, blockInfo.timestamp, cupAction.transactionHash)
+                                                    ).then(() => {
+                                                      cupsQueue.next();
+                                                      if (i === cupActions.length - 1) {
+                                                        resolve(cupAction.blockNumber);
+                                                      }
+                                                    })
+                                              );
+                          break;
+                        case methodSig('shut(bytes32)') + '00000000000000000000000000000000000000000000000000000000':
+                          Cup.collection.update({ cupi: web3.toBigNumber(cupAction.topics[2]).toNumber() },
                                               {
-                                                lad: '0x' + r2.topics[3].substring(26),
-                                                last_block: r2.blockNumber
-                                              }
-                                      }, {}, () => insertCupHistoryAction(CupHistoryAction, cupsQueue, 'give', web3.toBigNumber(r2.topics[2]).toNumber(), '0x' + r2.topics[1].substring(26), '0x' + r2.topics[3].substring(26), r2.blockNumber, r3.timestamp, r2.transactionHash));
-                  break;
-                default:
-                  const methods = ['lock(bytes32,uint256)', 'free(bytes32,uint256)', 'draw(bytes32,uint256)', 'wipe(bytes32,uint256)', 'bite(bytes32)'];
-                  let action = null;
-                  let cupi = null;
-                  let param = null;
-                  methods.forEach(value => {
-                    if (r2.topics[0] === methodSig(value) + '00000000000000000000000000000000000000000000000000000000') {
-                      action = value.substring(0, 4);
-                      cupi = web3.toBigNumber(r2.topics[2]).toNumber();
-                      param = action === 'bite' ? null : web3.toBigNumber('0x' + r2.topics[3].substring(26)).toNumber();
-                      tub.cups.call(r2.topics[2], (e4, r4) => {
-                        if (!e4) {
-                          Cup.collection.update({ cupi },
-                                                { $set:
-                                                        {
-                                                          art: r4[1].toNumber(),
-                                                          ink: r4[2].toNumber(),
-                                                          last_block: r2.blockNumber
-                                                        }
-                                                }, {}, () => insertCupHistoryAction(CupHistoryAction, cupsQueue, action, cupi, '0x' + r2.topics[1].substring(26), param, r2.blockNumber, r3.timestamp, r2.transactionHash));
-                        }
-                      });
+                                                $set:
+                                                      {
+                                                        art: 0,
+                                                        ink: 0,
+                                                        closed: true,
+                                                        last_block: cupAction.blockNumber
+                                                      }
+                                              }, {},
+                                              () => Promise.resolve(
+                                                insertCupHistoryAction(CupHistoryAction, 'shut', web3.toBigNumber(cupAction.topics[2]).toNumber(), '0x' + cupAction.topics[1].substring(26), null, cupAction.blockNumber, blockInfo.timestamp, cupAction.transactionHash)
+                                              ).then(() => {
+                                                cupsQueue.next();
+                                                if (i === cupActions.length - 1) {
+                                                  resolve(cupAction.blockNumber);
+                                                }
+                                              })
+                                            );
+                          break;
+                        case methodSig('give(bytes32,address)') + '00000000000000000000000000000000000000000000000000000000':
+                          Cup.collection.update({ cupi: web3.toBigNumber(cupAction.topics[2]).toNumber() },
+                                              { $set:
+                                                      {
+                                                        lad: '0x' + cupAction.topics[3].substring(26),
+                                                        last_block: cupAction.blockNumber
+                                                      }
+                                              }, {},
+                                              () => Promise.resolve(
+                                                insertCupHistoryAction(CupHistoryAction, 'give', web3.toBigNumber(cupAction.topics[2]).toNumber(), '0x' + cupAction.topics[1].substring(26), '0x' + cupAction.topics[3].substring(26), cupAction.blockNumber, blockInfo.timestamp, cupAction.transactionHash)
+                                              ).then(() => {
+                                                cupsQueue.next();
+                                                if (i === cupActions.length - 1) {
+                                                  resolve(cupAction.blockNumber);
+                                                }
+                                              })
+                                            );
+                          break;
+                        default:
+                          const methods = ['lock(bytes32,uint256)', 'free(bytes32,uint256)', 'draw(bytes32,uint256)', 'wipe(bytes32,uint256)', 'bite(bytes32)'];
+                          let action = null;
+                          let cupi = null;
+                          let param = null;
+                          methods.forEach(value => {
+                            if (cupAction.topics[0] === methodSig(value) + '00000000000000000000000000000000000000000000000000000000') {
+                              action = value.substring(0, 4);
+                              cupi = web3.toBigNumber(cupAction.topics[2]).toNumber();
+                              param = action === 'bite' ? null : web3.toBigNumber('0x' + cupAction.topics[3].substring(26)).toNumber();
+                              tub.cups.call(cupAction.topics[2], (e4, r4) => {
+                                if (!e4) {
+                                  Cup.collection.update({ cupi },
+                                                        { $set:
+                                                                {
+                                                                  art: r4[1].toNumber(),
+                                                                  ink: r4[2].toNumber(),
+                                                                  last_block: cupAction.blockNumber
+                                                                }
+                                                        }, {},
+                                                        () => Promise.resolve(
+                                                          insertCupHistoryAction(CupHistoryAction, action, cupi, '0x' + cupAction.topics[1].substring(26), param, cupAction.blockNumber, blockInfo.timestamp, cupAction.transactionHash)
+                                                        ).then(() => {
+                                                          cupsQueue.next();
+                                                          if (i === cupActions.length - 1) {
+                                                            resolve(cupAction.blockNumber);
+                                                          }
+                                                        })
+                                                      );
+                                }
+                              });
+                            }
+                          });
+                          if (!action) {
+                            cupsQueue.next();
+                          }
+                          break;
+                      }
+                    } else {
+                      reject(e3);
                     }
-                  });
-                  if (!action) {
-                    cupsQueue.next();
-                  }
-                  break;
+                  })
+                );
               }
             } else {
-              console.log('cup log get block error: ', e3);
+              reject(e2);
             }
-          })
+          });
+        } else {
+          reject(e);
+        }
+      });
+    });
+  }
+
+  getCups().then(fromBlock => {
+    console.log('Initial cups load done successfully');
+    console.log(`Setting up filter from block ${fromBlock}...`);
+    var getCupsQueue = new Queue();
+    web3.eth.filter({ fromBlock , address: tub.address }, e2 => {
+      if (!e2) {
+        console.log('New cup action detected, getting logs');
+        getCupsQueue.place(() =>
+          getCups().then(() => getCupsQueue.next())
         );
-      } else {
-        console.log('cup log error: ', e2);
       }
     });
-  });
+  }, e => console.log(e));
 }
 
-const insertCupHistoryAction = (CupHistoryAction, cupsQueue, action, cupi, sender, param, block, timestamp, transactionHash) => {
-  CupHistoryAction.collection.update(
+const insertCupHistoryAction = (CupHistoryAction, action, cupi, sender, param, block, timestamp, transactionHash) => {
+  return new Promise((resolve, reject) => {
+    CupHistoryAction.collection.update(
                                       { transactionHash },
                                       {
                                         action,
@@ -384,8 +441,9 @@ const insertCupHistoryAction = (CupHistoryAction, cupsQueue, action, cupi, sende
                                         transactionHash
                                       },
                                       { upsert: true },
-                                      () => cupsQueue.next()
+                                      () => resolve(true)
                                     );
+  });
 }
 
 const getPerValues = (Per, tub, skr, gem, persQueue) => {
