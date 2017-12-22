@@ -113,118 +113,559 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
   const Cup = mongoose.model('Cup');
   const CupHistoryAction = mongoose.model('CupHistoryAction');
 
-  Way.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
-    if (!e) {
-      // 0x7761790000000000000000000000000000000000000000000000000000000000: 'way' in bytes32
-      vox.LogNote({ sig: methodSig('mold(bytes32,uint256)'), foo: '0x7761790000000000000000000000000000000000000000000000000000000000' }, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
-        if (!e2) {
-          console.log('way log detected');
-          web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
-            if (!e3) {
-              Way.collection.insert({ value: web3.toBigNumber(r2.args.bar).toNumber(), last_block: r2.blockNumber, timestamp: r3.timestamp });
+  // Get Way logs
+  const getWays = () => {
+    return new Promise((resolve, reject) => {
+      Way.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
+        if (!e) {
+          const fromBlock = (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1);
+          // 0x7761790000000000000000000000000000000000000000000000000000000000: 'way' in bytes32
+          const filter = vox.LogNote({ sig: methodSig('mold(bytes32,uint256)'), foo: '0x7761790000000000000000000000000000000000000000000000000000000000' }, { fromBlock });
+          filter.get((e2, waysInfo) => {
+            if (!e2) {
+              if (waysInfo.length === 0) {
+                resolve(fromBlock);
+              }
+              var waysQueue = new Queue();
+              for (let i = 0; i < waysInfo.length; i++) {
+                waysQueue.place(() =>
+                  web3.eth.getBlock(waysInfo[i].blockNumber, (e3, blockInfo) => {
+                    if (!e3) {
+                      Way.collection.insert({ value: web3.toBigNumber(waysInfo[i].args.bar).toNumber(), last_block: waysInfo[i].blockNumber, timestamp: blockInfo.timestamp },
+                      () => {
+                        waysQueue.next();
+                        if (i === waysInfo.length - 1) {
+                          resolve(waysInfo[i].blockNumber + 1);
+                        }
+                      });
+                    } else {
+                      reject(e3);
+                    }
+                  })
+                );
+              }
             } else {
-              console.log('way log get block error: ', e3);
+              reject(e2);
             }
           });
         } else {
-          console.log('way log error: ', e2);
+          reject(e);
         }
       });
-    }
-  });
-
-  Mat.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
-    if (!e) {
-      // 0x6d61740000000000000000000000000000000000000000000000000000000000: 'mat' in bytes32
-      tub.LogNote({ sig: methodSig('mold(bytes32,uint256)'), foo: '0x6d61740000000000000000000000000000000000000000000000000000000000' }, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
+    });
+  }
+  const executeGetWays = () => {
+    getWays().then(fromBlock => {
+      console.log(`Initial Way load done successfully. Setting up Way filter from block ${fromBlock}...`);
+      var getWaysQueue = new Queue();
+      vox.LogNote({ sig: methodSig('mold(bytes32,uint256)'), foo: '0x7761790000000000000000000000000000000000000000000000000000000000' }, { fromBlock }, e2 => {
         if (!e2) {
-          console.log('mat log detected');
-          web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
-            if (!e3) {
-              Mat.collection.insert({ value: web3.toBigNumber(r2.args.bar).toNumber(), last_block: r2.blockNumber, timestamp: r3.timestamp });
-              Var.collection.update({ name: 'mat' },
-                                  {
-                                    name: 'mat',
-                                    value: web3.toBigNumber(r2.args.bar).div(1000000000).toNumber(),
-                                  },
-                                  { upsert: true });
-            } else {
-              console.log('mat log get block error: ', e3);
-            }
-          });
-        } else {
-          console.log('mat log error: ', e2);
-        }
-      });
-    }
-  });
-
-  var persQueue = new Queue();
-  Per.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
-    if (!e) {
-      tap.LogNote({ sig: [methodSig('boom(uint256)'), methodSig('bust(uint256)')] }, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
-        if (!e2) {
-          console.log('per log detected');
-          persQueue.place(() =>
-            getPerValues(Per, tub, skr, gem, persQueue)
+          console.log('Way filter detected, getting logs');
+          getWaysQueue.place(() =>
+            getWays().then(
+              () => getWaysQueue.next(),
+              e3 => {
+                console.log('Error getting Way logs', e3);
+                getWaysQueue.next()
+              })
           );
-        } else {
-          console.log('per log error: ', e2);
         }
       });
-    }
-  });
+    }, e => {
+      console.log('Error getting initial Way load', e);
+      console.log('Re-starting initial Way load...');
+      executeGetWays();
+    });
+  }
+  console.log('Starting initial Way load...');
+  executeGetWays();
+  //
 
-  Pip.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
-    if (!e) {
-      pip.LogValue({}, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
-        if (!e2) {
-          console.log('pip log detected');
-          web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
-            if (!e3) {
-              Pip.collection.insert({ value: r2.args.val !== '0x' ? web3.toBigNumber(r2.args.val).toNumber() : null, last_block: r2.blockNumber, timestamp: r3.timestamp });
-              Var.collection.update({ name: 'pip' },
-                                {
-                                  name: 'pip',
-                                  value: web3.toBigNumber(r2.args.val).toNumber(),
-                                },
-                                { upsert: true });
+  // Get Mat logs
+  const getMats = () => {
+    return new Promise((resolve, reject) => {
+      Mat.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
+        if (!e) {
+          const fromBlock = (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1);
+          // 0x6d61740000000000000000000000000000000000000000000000000000000000: 'mat' in bytes32
+          const filter = tub.LogNote({ sig: methodSig('mold(bytes32,uint256)'), foo: '0x6d61740000000000000000000000000000000000000000000000000000000000' }, { fromBlock });
+          filter.get((e2, matsInfo) => {
+            if (!e2) {
+              if (matsInfo.length === 0) {
+                resolve(fromBlock);
+              }
+              var matsQueue = new Queue();
+              for (let i = 0; i < matsInfo.length; i++) {
+                matsQueue.place(() =>
+                  web3.eth.getBlock(matsInfo[i].blockNumber, (e3, blockInfo) => {
+                    if (!e3) {
+                      Mat.collection.insert({ value: web3.toBigNumber(matsInfo[i].args.bar).toNumber(), last_block: matsInfo[i].blockNumber, timestamp: blockInfo.timestamp },
+                      () => {
+                        Var.collection.update({ name: 'mat' },
+                                              {
+                                                name: 'mat',
+                                                value: web3.toBigNumber(matsInfo[i].args.bar).div(1000000000).toNumber(),
+                                              },
+                                              { upsert: true });
+                        matsQueue.next();
+                        if (i === matsInfo.length - 1) {
+                          resolve(matsInfo[i].blockNumber + 1);
+                        }
+                      });
+                    } else {
+                      reject(e3);
+                    }
+                  })
+                );
+              }
             } else {
-              console.log('pip log get block error: ', e3);
+              reject(e2);
             }
           });
         } else {
-          console.log('pip log error: ', e2);
+          reject(e);
         }
       });
-    }
-  });
-
-  Pep.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
-    if (!e) {
-      pep.LogValue({}, { fromBlock: (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1) }, (e2, r2) => {
+    });
+  }
+  const executeGetMats = () => {
+    getMats().then(fromBlock => {
+      console.log(`Initial Mat load done successfully. Setting up Mat filter from block ${fromBlock}...`);
+      var getMatsQueue = new Queue();
+      tub.LogNote({ sig: methodSig('mold(bytes32,uint256)'), foo: '0x6d61740000000000000000000000000000000000000000000000000000000000' }, { fromBlock }, e2 => {
         if (!e2) {
-          console.log('pep log detected');
-          web3.eth.getBlock(r2.blockNumber, (e3, r3) => {
-            if (!e3) {
-              Pep.collection.insert({ value: r2.args.val !== '0x' ? web3.toBigNumber(r2.args.val).toNumber() : null, last_block: r2.blockNumber, timestamp: r3.timestamp });
-              Var.collection.update({ name: 'pep' },
-                                {
-                                  name: 'pep',
-                                  value: web3.toBigNumber(r2.args.val).toNumber(),
-                                },
-                                { upsert: true });
+          console.log('Mat filter detected, getting logs');
+          getMatsQueue.place(() =>
+            getMats().then(
+              () => getMatsQueue.next(),
+              e3 => {
+                console.log('Error getting Mat logs', e3);
+                getMatsQueue.next()
+              })
+          );
+        }
+      });
+    }, e => {
+      console.log('Error getting initial Mat load', e);
+      console.log('Re-starting initial Mat load...');
+      executeGetMats();
+    });
+  }
+  console.log('Starting initial Mat load...');
+  executeGetMats();
+  //
+
+  // Get Per logs
+  const getPers = (persQueue) => {
+    return new Promise((resolve, reject) => {
+      Per.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
+        if (!e) {
+          const fromBlock = (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1);
+          const promises = [getLogs(skr, 'Mint', {}, fromBlock),
+                            getLogs(skr, 'Burn', {}, fromBlock),
+                            getLogs(gem, 'Transfer', { from: tub.address }, fromBlock),
+                            getLogs(gem, 'Transfer', { to: tub.address }, fromBlock)];
+          const perResults = {};
+          Promise.all(promises).then(r2 => {
+            if (r2[0].length === 0 && r2[1].length === 0 && r2[2].length === 0 && r2[3].length === 0) {
+              resolve(fromBlock);
+            }
+            r2[0].forEach(value => {
+              if (typeof perResults[value.blockNumber] === 'undefined') {
+                perResults[value.blockNumber] = { skr : { amount: 0, add: [], del: [] }, gem : { amount: 0, add: [], del: [] }  }
+              }
+              perResults[value.blockNumber].skr.add.push(value);
+            });
+            r2[1].forEach(value => {
+              if (typeof perResults[value.blockNumber] === 'undefined') {
+                perResults[value.blockNumber] = { skr : { amount: 0, add: [], del: [] }, gem : { amount: 0, add: [], del: [] }  }
+              }
+              perResults[value.blockNumber].skr.del.push(value);
+            });
+            r2[2].forEach(value => {
+              if (typeof perResults[value.blockNumber] === 'undefined') {
+                perResults[value.blockNumber] = { skr : { amount: 0, add: [], del: [] }, gem : { amount: 0, add: [], del: [] }  }
+              }
+              perResults[value.blockNumber].gem.del.push(value);
+            });
+            r2[3].forEach(value => {
+              if (typeof perResults[value.blockNumber] === 'undefined') {
+                perResults[value.blockNumber] = { skr : { amount: 0, add: [], del: [] }, gem : { amount: 0, add: [], del: [] }  }
+              }
+              perResults[value.blockNumber].gem.add.push(value);
+            });
+            let skrBigNum = web3.toBigNumber(r.length === 0 ? 0 : r[0].totSkr);
+            let gemBigNum = web3.toBigNumber(r.length === 0 ? 0 : r[0].tubGem);
+            const promisesInsert = [];
+            let highestBlock;
+            Object.keys(perResults).sort((a, b) => a - b).map(block => {
+              const value = perResults[block];
+              // highestBlock = highestBlock > block ? highestBlock : block;
+              value.skr.add.forEach(add => {
+                skrBigNum = skrBigNum.add(web3.toBigNumber(add.args.wad));
+              });
+              value.skr.del.forEach(del => {
+                skrBigNum = skrBigNum.minus(web3.toBigNumber(del.args.wad));
+              });
+              value.gem.add.forEach(add => {
+                gemBigNum = gemBigNum.add(web3.toBigNumber(add.args.value));
+              });
+              value.gem.del.forEach(del => {
+                gemBigNum = gemBigNum.minus(web3.toBigNumber(del.args.value));
+              });
+              const per = gemBigNum.div(skrBigNum).times(web3.toBigNumber(10).pow(18)).toNumber();
+              const totSkr = skrBigNum.valueOf();
+              const tubGem = gemBigNum.valueOf();
+              promisesInsert.push(insertPer(Per, per, block, totSkr, tubGem));
+              highestBlock = block;
+            });
+            Promise.all(promisesInsert).then(() => {
+              resolve(parseInt(highestBlock, 10) + 1);
+            }, e3 => {
+              reject(e3);
+            });
+          }, e2 => {
+            reject(e2);
+          });
+        } else {
+          reject(e);
+        }
+      });
+    });
+  }
+  const executeGetPers = () => {
+    getPers().then(fromBlock => {
+      console.log(`Initial Per load done successfully. Setting up Per filter from block ${fromBlock}...`);
+      var getPersQueue = new Queue();
+      tap.LogNote({ sig: [methodSig('boom(uint256)'), methodSig('bust(uint256)')] }, { fromBlock }, e2 => {
+        if (!e2) {
+          console.log('Per filter detected, getting logs');
+          getPersQueue.place(() =>
+            getPers().then(
+              () => getPersQueue.next(),
+              e3 => {
+                console.log('Error getting Per logs', e3);
+                getPersQueue.next()
+              })
+          );
+        }
+      });
+    }, e => {
+      console.log('Error getting initial Per load', e);
+      console.log('Re-starting initial Per load...');
+      executeGetPers();
+    });
+  }
+  console.log('Starting initial Per load...');
+  executeGetPers();
+  //
+
+  // Get Pip logs
+  const getPips = () => {
+    return new Promise((resolve, reject) => {
+      Pip.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
+        if (!e) {
+          const fromBlock = (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1);
+          const filter = pip.LogValue({}, { fromBlock });
+          filter.get((e2, pipsInfo) => {
+            if (!e2) {
+              if (pipsInfo.length === 0) {
+                resolve(fromBlock);
+              }
+              var pipsQueue = new Queue();
+              for (let i = 0; i < pipsInfo.length; i++) {
+                pipsQueue.place(() =>
+                  web3.eth.getBlock(pipsInfo[i].blockNumber, (e3, blockInfo) => {
+                    if (!e3) {
+                      Pip.collection.insert({ value: pipsInfo[i].args.val !== '0x' ? web3.toBigNumber(pipsInfo[i].args.val).toNumber() : null, last_block: pipsInfo[i].blockNumber, timestamp: blockInfo.timestamp },
+                      () => {
+                        Var.collection.update({ name: 'pip' },
+                                              {
+                                                name: 'pip',
+                                                value: web3.toBigNumber(pipsInfo[i].args.val).toNumber(),
+                                              },
+                                              { upsert: true });
+                        pipsQueue.next();
+                        if (i === pipsInfo.length - 1) {
+                          resolve(pipsInfo[i].blockNumber + 1);
+                        }
+                      });
+                    } else {
+                      reject(e3);
+                    }
+                  })
+                );
+              }
             } else {
-              console.log('pep log get block error: ', e3);
+              reject(e2);
             }
           });
         } else {
-          console.log('pep log error: ', e2);
+          reject(e);
         }
       });
-    }
-  });
+    });
+  }
+  const executeGetPips = () => {
+    getPips().then(fromBlock => {
+      console.log(`Initial Pip load done successfully. Setting up Pip filter from block ${fromBlock}...`);
+      var getPipsQueue = new Queue();
+      pip.LogValue({}, { fromBlock }, e2 => {
+        if (!e2) {
+          console.log('Pip filter detected, getting logs');
+          getPipsQueue.place(() =>
+            getPips().then(
+              () => getPipsQueue.next(),
+              e3 => {
+                console.log('Error getting Pip logs', e3);
+                getPipsQueue.next()
+              })
+          );
+        }
+      });
+    }, e => {
+      console.log('Error getting initial Pip load', e);
+      console.log('Re-starting initial Pip load...');
+      executeGetPips();
+    });
+  }
+  console.log('Starting initial Pip load...');
+  executeGetPips();
+  //
 
+  // Get Pep logs
+  const getPeps = () => {
+    return new Promise((resolve, reject) => {
+      Pep.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
+        if (!e) {
+          const fromBlock = (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1);
+          const filter = pep.LogValue({}, { fromBlock });
+          filter.get((e2, pepsInfo) => {
+            if (!e2) {
+              if (pepsInfo.length === 0) {
+                resolve(fromBlock);
+              }
+              var pepsQueue = new Queue();
+              for (let i = 0; i < pepsInfo.length; i++) {
+                pepsQueue.place(() =>
+                  web3.eth.getBlock(pepsInfo[i].blockNumber, (e3, blockInfo) => {
+                    if (!e3) {
+                      Pep.collection.insert({ value: pepsInfo[i].args.val !== '0x' ? web3.toBigNumber(pepsInfo[i].args.val).toNumber() : null, last_block: pepsInfo[i].blockNumber, timestamp: blockInfo.timestamp },
+                      () => {
+                        Var.collection.update({ name: 'pep' },
+                                              {
+                                                name: 'pep',
+                                                value: web3.toBigNumber(pepsInfo[i].args.val).toNumber(),
+                                              },
+                                              { upsert: true });
+                        pepsQueue.next();
+                        if (i === pepsInfo.length - 1) {
+                          resolve(pepsInfo[i].blockNumber + 1);
+                        }
+                      });
+                    } else {
+                      reject(e3);
+                    }
+                  })
+                );
+              }
+            } else {
+              reject(e2);
+            }
+          });
+        } else {
+          reject(e);
+        }
+      });
+    });
+  }
+  const executeGetPeps = () => {
+    getPeps().then(fromBlock => {
+      console.log(`Initial Pep load done successfully. Setting up Pep filter from block ${fromBlock}...`);
+      var getPepsQueue = new Queue();
+      pep.LogValue({}, { fromBlock }, e2 => {
+        if (!e2) {
+          console.log('Pep filter detected, getting logs');
+          getPepsQueue.place(() =>
+            getPeps().then(
+              () => getPepsQueue.next(),
+              e3 => {
+                console.log('Error getting Pep logs', e3);
+                getPepsQueue.next()
+              })
+          );
+        }
+      });
+    }, e => {
+      console.log('Error getting initial Pep load', e);
+      console.log('Re-starting initial Pep load...');
+      executeGetPeps();
+    });
+  }
+  console.log('Starting initial Pep load...');
+  executeGetPeps();
+  //
+
+  // Get Cups Logs
+  const getCups = () => {
+    return new Promise((resolve, reject) => {
+      Cup.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
+        if (!e) {
+          const fromBlock = (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1);
+          const filter = web3.eth.filter({ fromBlock, address: tub.address });
+          filter.get((e2, cupActions) => {
+            if (!e2) {
+              if (cupActions.length === 0) {
+                resolve(fromBlock);
+              }
+              var cupsQueue = new Queue();
+              for (let i = 0; i < cupActions.length; i++) {
+                cupsQueue.place(() =>
+                  web3.eth.getBlock(cupActions[i].blockNumber, (e3, blockInfo) => {
+                    if (!e3) {
+                      switch (cupActions[i].topics[0]) {
+                        case web3.sha3('LogNewCup(address,bytes32)'):
+                          Cup.collection.update({ cupi: web3.toBigNumber(cupActions[i].data).toNumber() },
+                                              {
+                                                cupi: web3.toBigNumber(cupActions[i].data).toNumber(),
+                                                lad: '0x' + cupActions[i].topics[1].substring(26),
+                                                art: 0,
+                                                ink: 0,
+                                                closed: false,
+                                                last_block: cupActions[i].blockNumber
+                                              },
+                                              { upsert: true },
+                                              () => Promise.resolve(
+                                                      insertCupHistoryAction(CupHistoryAction, 'open', web3.toBigNumber(cupActions[i].data).toNumber(), '0x' + cupActions[i].topics[1].substring(26), null, cupActions[i].blockNumber, blockInfo.timestamp, cupActions[i].transactionHash)
+                                                    ).then(() => {
+                                                      cupsQueue.next();
+                                                      if (i === cupActions.length - 1) {
+                                                        resolve(cupActions[i].blockNumber + 1);
+                                                      }
+                                                    })
+                                              );
+                          break;
+                        case methodSig('shut(bytes32)') + '00000000000000000000000000000000000000000000000000000000':
+                          Cup.collection.update({ cupi: web3.toBigNumber(cupActions[i].topics[2]).toNumber() },
+                                              {
+                                                $set:
+                                                      {
+                                                        art: 0,
+                                                        ink: 0,
+                                                        closed: true,
+                                                        last_block: cupActions[i].blockNumber
+                                                      }
+                                              }, {},
+                                              () => Promise.resolve(
+                                                insertCupHistoryAction(CupHistoryAction, 'shut', web3.toBigNumber(cupActions[i].topics[2]).toNumber(), '0x' + cupActions[i].topics[1].substring(26), null, cupActions[i].blockNumber, blockInfo.timestamp, cupActions[i].transactionHash)
+                                              ).then(() => {
+                                                cupsQueue.next();
+                                                if (i === cupActions.length - 1) {
+                                                  resolve(cupActions[i].blockNumber + 1);
+                                                }
+                                              })
+                                            );
+                          break;
+                        case methodSig('give(bytes32,address)') + '00000000000000000000000000000000000000000000000000000000':
+                          Cup.collection.update({ cupi: web3.toBigNumber(cupActions[i].topics[2]).toNumber() },
+                                              { $set:
+                                                      {
+                                                        lad: '0x' + cupActions[i].topics[3].substring(26),
+                                                        last_block: cupActions[i].blockNumber
+                                                      }
+                                              }, {},
+                                              () => Promise.resolve(
+                                                insertCupHistoryAction(CupHistoryAction, 'give', web3.toBigNumber(cupActions[i].topics[2]).toNumber(), '0x' + cupActions[i].topics[1].substring(26), '0x' + cupActions[i].topics[3].substring(26), cupActions[i].blockNumber, blockInfo.timestamp, cupActions[i].transactionHash)
+                                              ).then(() => {
+                                                cupsQueue.next();
+                                                if (i === cupActions.length - 1) {
+                                                  resolve(cupActions[i].blockNumber + 1);
+                                                }
+                                              })
+                                            );
+                          break;
+                        default:
+                          const methods = ['lock(bytes32,uint256)', 'free(bytes32,uint256)', 'draw(bytes32,uint256)', 'wipe(bytes32,uint256)', 'bite(bytes32)'];
+                          let action = null;
+                          let cupi = null;
+                          let param = null;
+                          methods.forEach(value => {
+                            if (cupActions[i].topics[0] === methodSig(value) + '00000000000000000000000000000000000000000000000000000000') {
+                              action = value.substring(0, 4);
+                              cupi = web3.toBigNumber(cupActions[i].topics[2]).toNumber();
+                              param = action === 'bite' ? null : web3.toBigNumber('0x' + cupActions[i].topics[3].substring(26)).toNumber();
+                              tub.cups.call(cupActions[i].topics[2], (e4, r4) => {
+                                if (!e4) {
+                                  Cup.collection.update({ cupi },
+                                                        { $set:
+                                                                {
+                                                                  art: r4[1].toNumber(),
+                                                                  ink: r4[2].toNumber(),
+                                                                  last_block: cupActions[i].blockNumber
+                                                                }
+                                                        }, {},
+                                                        () => Promise.resolve(
+                                                          insertCupHistoryAction(CupHistoryAction, action, cupi, '0x' + cupActions[i].topics[1].substring(26), param, cupActions[i].blockNumber, blockInfo.timestamp, cupActions[i].transactionHash)
+                                                        ).then(() => {
+                                                          cupsQueue.next();
+                                                          if (i === cupActions.length - 1) {
+                                                            resolve(cupActions[i].blockNumber + 1);
+                                                          }
+                                                        })
+                                                      );
+                                }
+                              });
+                            }
+                          });
+                          if (!action) {
+                            cupsQueue.next();
+                          }
+                          break;
+                      }
+                    } else {
+                      reject(e3);
+                    }
+                  })
+                );
+              }
+            } else {
+              reject(e2);
+            }
+          });
+        } else {
+          reject(e);
+        }
+      });
+    });
+  }
+  const executeGetCups = () => {
+    getCups().then(fromBlock => {
+      console.log(`Initial Cups load done successfully. Setting up Cups filter from block ${fromBlock}...`);
+      var getCupsQueue = new Queue();
+      web3.eth.filter({ fromBlock , address: tub.address }, e2 => {
+        if (!e2) {
+          console.log('New Cup action detected, getting logs');
+          getCupsQueue.place(() =>
+            getCups().then(
+              () => getCupsQueue.next(),
+              e3 => {
+                console.log('Error getting Cups logs', e3);
+                getCupsQueue.next()
+              })
+          );
+        }
+      });
+    }, e => {
+      console.log('Error getting initial Cups load', e);
+      console.log('Re-starting initial Cups load...');
+      executeGetCups();
+    });
+  }
+  console.log('Starting initial Cups load...');
+  executeGetCups();
+  //
+
+  // Interval
   setInterval(() => {
     tub.chi.call((e, r) => {
       if (!e) {
@@ -282,158 +723,6 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
       }
     });
   }, 5000);
-
-  const getCups = () => {
-    return new Promise((resolve, reject) => {
-      Cup.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
-        if (!e) {
-          const filter = web3.eth.filter({ fromBlock: (r.length === 0 ? 0 : r[0].last_block), address: tub.address });
-          filter.get((e2, cupActions) => {
-            if (!e2) {
-              var cupsQueue = new Queue();
-              for (let i = 0; i < cupActions.length; i++) {
-                const cupAction = cupActions[i];
-                cupsQueue.place(() =>
-                  web3.eth.getBlock(cupAction.blockNumber, (e3, blockInfo) => {
-                    if (!e3) {
-                      switch (cupAction.topics[0]) {
-                        case web3.sha3('LogNewCup(address,bytes32)'):
-                          Cup.collection.update({ cupi: web3.toBigNumber(cupAction.data).toNumber() },
-                                              {
-                                                cupi: web3.toBigNumber(cupAction.data).toNumber(),
-                                                lad: '0x' + cupAction.topics[1].substring(26),
-                                                art: 0,
-                                                ink: 0,
-                                                closed: false,
-                                                last_block: cupAction.blockNumber
-                                              },
-                                              { upsert: true },
-                                              () => Promise.resolve(
-                                                      insertCupHistoryAction(CupHistoryAction, 'open', web3.toBigNumber(cupAction.data).toNumber(), '0x' + cupAction.topics[1].substring(26), null, cupAction.blockNumber, blockInfo.timestamp, cupAction.transactionHash)
-                                                    ).then(() => {
-                                                      cupsQueue.next();
-                                                      if (i === cupActions.length - 1) {
-                                                        resolve(cupAction.blockNumber);
-                                                      }
-                                                    })
-                                              );
-                          break;
-                        case methodSig('shut(bytes32)') + '00000000000000000000000000000000000000000000000000000000':
-                          Cup.collection.update({ cupi: web3.toBigNumber(cupAction.topics[2]).toNumber() },
-                                              {
-                                                $set:
-                                                      {
-                                                        art: 0,
-                                                        ink: 0,
-                                                        closed: true,
-                                                        last_block: cupAction.blockNumber
-                                                      }
-                                              }, {},
-                                              () => Promise.resolve(
-                                                insertCupHistoryAction(CupHistoryAction, 'shut', web3.toBigNumber(cupAction.topics[2]).toNumber(), '0x' + cupAction.topics[1].substring(26), null, cupAction.blockNumber, blockInfo.timestamp, cupAction.transactionHash)
-                                              ).then(() => {
-                                                cupsQueue.next();
-                                                if (i === cupActions.length - 1) {
-                                                  resolve(cupAction.blockNumber);
-                                                }
-                                              })
-                                            );
-                          break;
-                        case methodSig('give(bytes32,address)') + '00000000000000000000000000000000000000000000000000000000':
-                          Cup.collection.update({ cupi: web3.toBigNumber(cupAction.topics[2]).toNumber() },
-                                              { $set:
-                                                      {
-                                                        lad: '0x' + cupAction.topics[3].substring(26),
-                                                        last_block: cupAction.blockNumber
-                                                      }
-                                              }, {},
-                                              () => Promise.resolve(
-                                                insertCupHistoryAction(CupHistoryAction, 'give', web3.toBigNumber(cupAction.topics[2]).toNumber(), '0x' + cupAction.topics[1].substring(26), '0x' + cupAction.topics[3].substring(26), cupAction.blockNumber, blockInfo.timestamp, cupAction.transactionHash)
-                                              ).then(() => {
-                                                cupsQueue.next();
-                                                if (i === cupActions.length - 1) {
-                                                  resolve(cupAction.blockNumber);
-                                                }
-                                              })
-                                            );
-                          break;
-                        default:
-                          const methods = ['lock(bytes32,uint256)', 'free(bytes32,uint256)', 'draw(bytes32,uint256)', 'wipe(bytes32,uint256)', 'bite(bytes32)'];
-                          let action = null;
-                          let cupi = null;
-                          let param = null;
-                          methods.forEach(value => {
-                            if (cupAction.topics[0] === methodSig(value) + '00000000000000000000000000000000000000000000000000000000') {
-                              action = value.substring(0, 4);
-                              cupi = web3.toBigNumber(cupAction.topics[2]).toNumber();
-                              param = action === 'bite' ? null : web3.toBigNumber('0x' + cupAction.topics[3].substring(26)).toNumber();
-                              tub.cups.call(cupAction.topics[2], (e4, r4) => {
-                                if (!e4) {
-                                  Cup.collection.update({ cupi },
-                                                        { $set:
-                                                                {
-                                                                  art: r4[1].toNumber(),
-                                                                  ink: r4[2].toNumber(),
-                                                                  last_block: cupAction.blockNumber
-                                                                }
-                                                        }, {},
-                                                        () => Promise.resolve(
-                                                          insertCupHistoryAction(CupHistoryAction, action, cupi, '0x' + cupAction.topics[1].substring(26), param, cupAction.blockNumber, blockInfo.timestamp, cupAction.transactionHash)
-                                                        ).then(() => {
-                                                          cupsQueue.next();
-                                                          if (i === cupActions.length - 1) {
-                                                            resolve(cupAction.blockNumber);
-                                                          }
-                                                        })
-                                                      );
-                                }
-                              });
-                            }
-                          });
-                          if (!action) {
-                            cupsQueue.next();
-                          }
-                          break;
-                      }
-                    } else {
-                      reject(e3);
-                    }
-                  })
-                );
-              }
-            } else {
-              reject(e2);
-            }
-          });
-        } else {
-          reject(e);
-        }
-      });
-    });
-  }
-
-  const executeGetCups = () => {
-    getCups().then(fromBlock => {
-      console.log('Initial cups load done successfully');
-      console.log(`Setting up filter from block ${fromBlock}...`);
-      var getCupsQueue = new Queue();
-      web3.eth.filter({ fromBlock , address: tub.address }, e2 => {
-        if (!e2) {
-          console.log('New cup action detected, getting logs');
-          getCupsQueue.place(() =>
-            getCups().then(() => getCupsQueue.next())
-          );
-        }
-      });
-    }, e => { 
-      console.log('error getting initial cups load', e);
-      console.log('Re-starting initial cups load...');
-      executeGetCups();
-    });
-  }
-
-  console.log('Starting initial cups load...');
-  executeGetCups();
 }
 
 const insertCupHistoryAction = (CupHistoryAction, action, cupi, sender, param, block, timestamp, transactionHash) => {
@@ -455,71 +744,11 @@ const insertCupHistoryAction = (CupHistoryAction, action, cupi, sender, param, b
   });
 }
 
-const getPerValues = (Per, tub, skr, gem, persQueue) => {
-  Per.collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e, r) => {
-    if (!e) {
-      const fromBlock = (r.length === 0 ? 0 : parseInt(r[0].last_block, 10) + 1);
-      const promises = [getLogs(skr, 'LogNote', { sig: [methodSig('mint(uint256)'), methodSig('burn(uint256)')] }, fromBlock),
-                        getLogs(gem, 'Transfer', { from: tub.address }, fromBlock),
-                        getLogs(gem, 'Transfer', { to: tub.address }, fromBlock)];
-
-      const perResults = {};
-      Promise.all(promises).then(r2 => {
-        if (r2[0] && r2[1] && r2[2]) {
-          r2[0].forEach(value => {
-            if (typeof perResults[value.blockNumber] === 'undefined') {
-              perResults[value.blockNumber] = { skr : { amount: 0, add: {}, del: {} }, gem : { amount: 0, add: {}, del: {} }  }
-            }
-            perResults[value.blockNumber].skr[value.args.sig === methodSig('mint(uint256)') ? 'add' : 'del'] = value;
-          });
-          r2[1].forEach(value => {
-            if (typeof perResults[value.blockNumber] === 'undefined') {
-              perResults[value.blockNumber] = { skr : { amount: 0, add: {}, del: {} }, gem : { amount: 0, add: {}, del: {} }  }
-            }
-            perResults[value.blockNumber].gem.del = value;
-          });
-          r2[2].forEach(value => {
-            if (typeof perResults[value.blockNumber] === 'undefined') {
-              perResults[value.blockNumber] = { skr : { amount: 0, add: {}, del: {} }, gem : { amount: 0, add: {}, del: {} }  }
-            }
-            perResults[value.blockNumber].gem.add = value;
-          });
-          let skrBigNum = web3.toBigNumber(r.length === 0 ? 0 : r[0].totSkr);
-          let gemBigNum = web3.toBigNumber(r.length === 0 ? 0 : r[0].tubGem);
-          const promisesInsert = [];
-          Object.keys(perResults).map(key => {
-            const value = perResults[key];
-            skrBigNum = skrBigNum.add(typeof value.skr.add.args !== 'undefined' ? web3.toBigNumber(value.skr.add.args.foo) : 0);
-            skrBigNum = skrBigNum.minus(typeof value.skr.del.args !== 'undefined' ? web3.toBigNumber(value.skr.del.args.foo) : 0);
-            gemBigNum = gemBigNum.add(typeof value.gem.add.args !== 'undefined' ? value.gem.add.args.value : 0);
-            gemBigNum = gemBigNum.minus(typeof value.gem.del.args !== 'undefined' ? value.gem.del.args.value : 0);
-            const per = gemBigNum.div(skrBigNum).times(web3.toBigNumber(10).pow(18)).toNumber();
-            const totSkr = skrBigNum.valueOf();
-            const tubGem = gemBigNum.valueOf();
-            promisesInsert.push(insertPer(Per, per, key, totSkr, tubGem));
-          });
-          Promise.all(promisesInsert).then(() => {
-            persQueue.next();
-          }, e3 => {
-            console.log('error insert per values: ', e3)
-          });
-        } else {
-          persQueue.next();
-        }
-      }, e2 => {
-        console.log('error get logs per values: ', e2)
-      });
-    } else {
-      persQueue.next();
-    }
-  });
-}
-
 const insertPer = (Per, value, blockNumber, totSkr, tubGem) => {
   return new Promise((resolve, reject) => {
     web3.eth.getBlock(blockNumber, (e, r) => {
       if (!e) {
-        Per.collection.insert({ value, last_block: blockNumber, timestamp: r.timestamp, totSkr, tubGem }, () => {
+        Per.collection.insert({ value, last_block: parseInt(blockNumber, 10), timestamp: r.timestamp, totSkr, tubGem }, () => {
           resolve(r);
         });
       } else {
