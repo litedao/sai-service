@@ -316,7 +316,7 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
               const per = gemBigNum.div(skrBigNum).times(web3.toBigNumber(10).pow(18)).toNumber();
               const totSkr = skrBigNum.valueOf();
               const tubGem = gemBigNum.valueOf();
-              promisesInsert.push(insertPer(Per, per, block, totSkr, tubGem));
+              promisesInsert.push(insertPer(Per, per, parseInt(block, 10), totSkr, tubGem));
               highestBlock = block;
             });
             Promise.all(promisesInsert).then(() => {
@@ -728,19 +728,19 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
 const insertCupHistoryAction = (CupHistoryAction, action, cupi, sender, param, blockNumber, timestamp, transactionHash) => {
   return new Promise((resolve, reject) => {
     CupHistoryAction.collection.update(
-                                      { transactionHash },
-                                      {
-                                        action,
-                                        cupi,
-                                        sender,
-                                        param,
-                                        blockNumber,
-                                        timestamp,
-                                        transactionHash
-                                      },
-                                      { upsert: true },
-                                      () => resolve(true)
-                                    );
+                                        { transactionHash },
+                                        {
+                                          action,
+                                          cupi,
+                                          sender,
+                                          param,
+                                          blockNumber,
+                                          timestamp,
+                                          transactionHash
+                                        },
+                                        { upsert: true },
+                                        () => resolve(true)
+                                      );
   });
 }
 
@@ -748,9 +748,12 @@ const insertPer = (Per, value, blockNumber, totSkr, tubGem) => {
   return new Promise((resolve, reject) => {
     web3.eth.getBlock(blockNumber, (e, r) => {
       if (!e) {
-        Per.collection.insert({ value, blockNumber: parseInt(blockNumber, 10), timestamp: r.timestamp, totSkr, tubGem }, () => {
-          resolve(r);
-        });
+        Per.collection.update(
+                                { blockNumber },
+                                { value, blockNumber, timestamp: r.timestamp, totSkr, tubGem },
+                                { upsert: true },
+                                () => resolve(r)
+                              );
       } else {
         reject(e);
       }
