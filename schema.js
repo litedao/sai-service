@@ -14,7 +14,7 @@ mongoose.model('Var', Var);
 const Pip = new Schema(
   {
     "value": Number,
-    "last_block": Number,
+    "blockNumber": Number,
     "timestamp": Number,
   });
 mongoose.model('Pip', Pip);
@@ -23,7 +23,7 @@ mongoose.model('Pip', Pip);
 const Pep = new Schema(
   {
     "value": Number,
-    "last_block": Number,
+    "blockNumber": Number,
     "timestamp": Number,
   });
 mongoose.model('Pep', Pep);
@@ -32,7 +32,7 @@ mongoose.model('Pep', Pep);
 const Way = new Schema(
   {
     "value": Number,
-    "last_block": Number,
+    "blockNumber": Number,
     "timestamp": Number,
   });
 mongoose.model('Way', Way);
@@ -41,7 +41,7 @@ mongoose.model('Way', Way);
 const Mat = new Schema(
   {
     "value": Number,
-    "last_block": Number,
+    "blockNumber": Number,
     "timestamp": Number,
   });
 mongoose.model('Mat', Mat);
@@ -50,7 +50,7 @@ mongoose.model('Mat', Mat);
 const Per = new Schema(
   {
     "value": Number,
-    "last_block": Number,
+    "blockNumber": Number,
     "timestamp": Number,
     "totSkr": String,
     "tubGem": String,
@@ -65,7 +65,7 @@ const Cup = new Schema(
     "art": Number,
     "ink": Number,
     "closed": Boolean,
-    "last_block": Number,
+    "lastBlockNumber": Number,
   });
 mongoose.model('Cup', Cup);
 
@@ -77,7 +77,7 @@ const CupHistoryAction = new Schema(
     "sender": String,
     "param": String,
     "timestamp": Number,
-    "block": Number,
+    "blockNumber": Number,
     "transactionHash": String,
   });
 mongoose.model('CupHistoryAction', CupHistoryAction);

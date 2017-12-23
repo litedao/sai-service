@@ -86,9 +86,9 @@ const prom = (url) => {
       case 'ways':
         mongoose.model('Way').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
           if (!e) {
-            mongoose.model('Way').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
+            mongoose.model('Way').collection.find().sort({ 'blockNumber': -1 }).limit(1).toArray((e2, r2) => {
               if (!e2) {
-                resolve({ last_block: r2 && r2[0] ? r2[0].last_block : 0, results: r });
+                resolve({ lastBlockNumber: r2 && r2[0] ? r2[0].blockNumber : 0, results: r });
               } else {
                 reject(e2);
               }
@@ -101,9 +101,9 @@ const prom = (url) => {
       case 'pers':
         mongoose.model('Per').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
           if (!e) {
-            mongoose.model('Per').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
+            mongoose.model('Per').collection.find().sort({ 'blockNumber': -1 }).limit(1).toArray((e2, r2) => {
               if (!e2) {
-                resolve({ last_block: r2 && r2[0] ? r2[0].last_block : 0, results: r });
+                resolve({ lastBlockNumber: r2 && r2[0] ? r2[0].blockNumber : 0, results: r });
               } else {
                 reject(e2);
               }
@@ -116,9 +116,9 @@ const prom = (url) => {
       case 'pips':
         mongoose.model('Pip').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
           if (!e) {
-            mongoose.model('Pip').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
+            mongoose.model('Pip').collection.find().sort({ 'blockNumber': -1 }).limit(1).toArray((e2, r2) => {
               if (!e2) {
-                resolve({ last_block: r2 && r2[0] ? r2[0].last_block : 0, results: r });
+                resolve({ lastBlockNumber: r2 && r2[0] ? r2[0].blockNumber : 0, results: r });
               } else {
                 reject(e2);
               }
@@ -131,9 +131,9 @@ const prom = (url) => {
       case 'peps':
         mongoose.model('Pep').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
           if (!e) {
-            mongoose.model('Pep').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
+            mongoose.model('Pep').collection.find().sort({ 'blockNumber': -1 }).limit(1).toArray((e2, r2) => {
               if (!e2) {
-                resolve({ last_block: r2 && r2[0] ? r2[0].last_block : 0, results: r });
+                resolve({ lastBlockNumber: r2 && r2[0] ? r2[0].blockNumber : 0, results: r });
               } else {
                 reject(e2);
               }
@@ -146,9 +146,9 @@ const prom = (url) => {
       case 'mats':
         mongoose.model('Mat').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
           if (!e) {
-            mongoose.model('Mat').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
+            mongoose.model('Mat').collection.find().sort({ 'blockNumber': -1 }).limit(1).toArray((e2, r2) => {
               if (!e2) {
-                resolve({ last_block: r2 && r2[0] ? r2[0].last_block : 0, results: r });
+                resolve({ lastBlockNumber: r2 && r2[0] ? r2[0].blockNumber : 0, results: r });
               } else {
                 reject(e2);
               }
@@ -244,7 +244,7 @@ const prom = (url) => {
                 'art': '$art',
                 'ink': '$ink',
                 'closed': '$closed',
-                'last_block': '$last_block',
+                'lastBlockNumber': '$lastBlockNumber',
                 // If art === 0, then cup is safe, so we define a big ratio to pass the condition
                 'ratio': { '$cond': [ { '$eq': [ '$art', 0 ] }, 999999999999999, { '$divide': [ '$ink', '$art' ] } ] },
               },
@@ -258,13 +258,13 @@ const prom = (url) => {
 
           mongoose.model('Cup').collection.aggregate(options).toArray((e, r) => {
             if (!e) {
-              mongoose.model('Cup').collection.find().sort({ 'last_block': -1 }).limit(1).toArray((e2, r2) => {
+              mongoose.model('Cup').collection.find().sort({ 'lastBlockNumber': -1 }).limit(1).toArray((e2, r2) => {
                 if (!e2) {
                   r.forEach((item, index) => {
                     r[index].safe = r[index].closed || r[index].ratio >= ratio;
                     delete r[index].ratio;
                   });
-                  resolve({ last_block: r2 && r2[0] ? r2[0].last_block : 0, results: r });
+                  resolve({ lastBlockNumber: r2 && r2[0] ? r2[0].lastBlockNumber : 0, results: r });
                 } else {
                   reject(e2);
                 }
