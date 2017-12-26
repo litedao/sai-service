@@ -297,10 +297,10 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
             let skrBigNum = web3.toBigNumber(r.length === 0 ? 0 : r[0].totSkr);
             let gemBigNum = web3.toBigNumber(r.length === 0 ? 0 : r[0].tubGem);
             const promisesInsert = [];
-            let highestBlock;
-            Object.keys(perResults).sort((a, b) => a - b).map(block => {
+            var persQueue = new Queue();
+            const perResultsOrdered = Object.keys(perResults).sort((a, b) => a - b);
+            perResultsOrdered.map(block => {
               const value = perResults[block];
-              // highestBlock = highestBlock > block ? highestBlock : block;
               value.skr.add.forEach(add => {
                 skrBigNum = skrBigNum.add(web3.toBigNumber(add.args.wad));
               });
@@ -316,13 +316,16 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
               const per = gemBigNum.div(skrBigNum).times(web3.toBigNumber(10).pow(18)).toNumber();
               const totSkr = skrBigNum.valueOf();
               const tubGem = gemBigNum.valueOf();
-              promisesInsert.push(insertPer(Per, per, parseInt(block, 10), totSkr, tubGem));
-              highestBlock = block;
-            });
-            Promise.all(promisesInsert).then(() => {
-              resolve(parseInt(highestBlock, 10) + 1);
-            }, e3 => {
-              reject(e3);
+              persQueue.place(() =>
+                Promise.resolve(insertPer(Per, per, parseInt(block, 10), totSkr, tubGem)).then(() => {
+                  persQueue.next();
+                  if (block === perResultsOrdered[perResultsOrdered.length - 1]) {
+                    resolve(block);
+                  }
+                }, e3 => {
+                  reject(e3);
+                })
+              );
             });
           }, e2 => {
             reject(e2);
