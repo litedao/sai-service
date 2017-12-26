@@ -529,8 +529,9 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
                                               {
                                                 cupi: web3.toBigNumber(cupActions[i].data).toNumber(),
                                                 lad: '0x' + cupActions[i].topics[1].substring(26),
-                                                art: 0,
                                                 ink: 0,
+                                                art: 0,
+                                                ire: 0,
                                                 closed: false,
                                                 lastBlockNumber: cupActions[i].blockNumber
                                               },
@@ -542,28 +543,31 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
                                                       if (i === cupActions.length - 1) {
                                                         resolve(cupActions[i].blockNumber + 1);
                                                       }
-                                                    })
-                                              );
+                                                    }, eInsert => reject(eInsert)),
+                                              () => reject('Error inserting in MongoDB')
+                                            );
                           break;
                         case methodSig('shut(bytes32)') + '00000000000000000000000000000000000000000000000000000000':
                           Cup.collection.update({ cupi: web3.toBigNumber(cupActions[i].topics[2]).toNumber() },
                                               {
                                                 $set:
                                                       {
-                                                        art: 0,
                                                         ink: 0,
+                                                        art: 0,
+                                                        ire: 0,
                                                         closed: true,
                                                         lastBlockNumber: cupActions[i].blockNumber
                                                       }
                                               }, {},
                                               () => Promise.resolve(
-                                                insertCupHistoryAction(CupHistoryAction, 'shut', web3.toBigNumber(cupActions[i].topics[2]).toNumber(), '0x' + cupActions[i].topics[1].substring(26), null, cupActions[i].blockNumber, blockInfo.timestamp, cupActions[i].transactionHash)
-                                              ).then(() => {
-                                                cupsQueue.next();
-                                                if (i === cupActions.length - 1) {
-                                                  resolve(cupActions[i].blockNumber + 1);
-                                                }
-                                              })
+                                                      insertCupHistoryAction(CupHistoryAction, 'shut', web3.toBigNumber(cupActions[i].topics[2]).toNumber(), '0x' + cupActions[i].topics[1].substring(26), null, cupActions[i].blockNumber, blockInfo.timestamp, cupActions[i].transactionHash)
+                                                    ).then(() => {
+                                                      cupsQueue.next();
+                                                      if (i === cupActions.length - 1) {
+                                                        resolve(cupActions[i].blockNumber + 1);
+                                                      }
+                                                    }, eInsert => reject(eInsert)),
+                                              () => reject('Error inserting in MongoDB')
                                             );
                           break;
                         case methodSig('give(bytes32,address)') + '00000000000000000000000000000000000000000000000000000000':
@@ -575,13 +579,14 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
                                                       }
                                               }, {},
                                               () => Promise.resolve(
-                                                insertCupHistoryAction(CupHistoryAction, 'give', web3.toBigNumber(cupActions[i].topics[2]).toNumber(), '0x' + cupActions[i].topics[1].substring(26), '0x' + cupActions[i].topics[3].substring(26), cupActions[i].blockNumber, blockInfo.timestamp, cupActions[i].transactionHash)
-                                              ).then(() => {
-                                                cupsQueue.next();
-                                                if (i === cupActions.length - 1) {
-                                                  resolve(cupActions[i].blockNumber + 1);
-                                                }
-                                              })
+                                                      insertCupHistoryAction(CupHistoryAction, 'give', web3.toBigNumber(cupActions[i].topics[2]).toNumber(), '0x' + cupActions[i].topics[1].substring(26), '0x' + cupActions[i].topics[3].substring(26), cupActions[i].blockNumber, blockInfo.timestamp, cupActions[i].transactionHash)
+                                                    ).then(() => {
+                                                      cupsQueue.next();
+                                                      if (i === cupActions.length - 1) {
+                                                        resolve(cupActions[i].blockNumber + 1);
+                                                      }
+                                                    }, eInsert => reject(eInsert)),
+                                              () => reject('Error inserting in MongoDB')
                                             );
                           break;
                         default:
@@ -594,25 +599,29 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
                               action = value.substring(0, 4);
                               cupi = web3.toBigNumber(cupActions[i].topics[2]).toNumber();
                               param = action === 'bite' ? null : web3.toBigNumber('0x' + cupActions[i].topics[3].substring(26)).toNumber();
-                              tub.cups.call(cupActions[i].topics[2], (e4, r4) => {
+                              tub.cups.call(cupActions[i].topics[2], (e4, cupData) => {
                                 if (!e4) {
                                   Cup.collection.update({ cupi },
                                                         { $set:
                                                                 {
-                                                                  art: r4[1].toNumber(),
-                                                                  ink: r4[2].toNumber(),
+                                                                  ink: cupData[1].toNumber(),
+                                                                  art: cupData[2].toNumber(),
+                                                                  ire: cupData[3].toNumber(),
                                                                   lastBlockNumber: cupActions[i].blockNumber
                                                                 }
                                                         }, {},
                                                         () => Promise.resolve(
-                                                          insertCupHistoryAction(CupHistoryAction, action, cupi, '0x' + cupActions[i].topics[1].substring(26), param, cupActions[i].blockNumber, blockInfo.timestamp, cupActions[i].transactionHash)
-                                                        ).then(() => {
-                                                          cupsQueue.next();
-                                                          if (i === cupActions.length - 1) {
-                                                            resolve(cupActions[i].blockNumber + 1);
-                                                          }
-                                                        })
+                                                                insertCupHistoryAction(CupHistoryAction, action, cupi, '0x' + cupActions[i].topics[1].substring(26), param, cupActions[i].blockNumber, blockInfo.timestamp, cupActions[i].transactionHash)
+                                                              ).then(() => {
+                                                                cupsQueue.next();
+                                                                if (i === cupActions.length - 1) {
+                                                                  resolve(cupActions[i].blockNumber + 1);
+                                                                }
+                                                              }, eInsert => reject(eInsert)),
+                                                        () => reject('Error inserting in MongoDB')
                                                       );
+                                } else {
+                                  reject(e4);
                                 }
                               });
                             }
@@ -739,7 +748,8 @@ const insertCupHistoryAction = (CupHistoryAction, action, cupi, sender, param, b
                                           transactionHash
                                         },
                                         { upsert: true },
-                                        () => resolve(true)
+                                        () => resolve(true),
+                                        () => reject('Error inserting in MongoDB')
                                       );
   });
 }
@@ -752,7 +762,8 @@ const insertPer = (Per, value, blockNumber, totSkr, tubGem) => {
                                 { blockNumber },
                                 { value, blockNumber, timestamp: r.timestamp, totSkr, tubGem },
                                 { upsert: true },
-                                () => resolve(r)
+                                () => resolve(r),
+                                () => reject('Error inserting in MongoDB')
                               );
       } else {
         reject(e);

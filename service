@@ -241,8 +241,9 @@ const prom = (url) => {
               '$project': {
                 'cupi': '$cupi',
                 'lad': '$lad',
-                'art': '$art',
                 'ink': '$ink',
+                'art': '$art',
+                'ire': '$ire',
                 'closed': '$closed',
                 'lastBlockNumber': '$lastBlockNumber',
                 // If art === 0, then cup is safe, so we define a big ratio to pass the condition
