@@ -656,6 +656,9 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
                           });
                           if (!action) {
                             cupsQueue.next();
+                            if (i === cupActions.length - 1) {
+                              resolve(cupActions[i].blockNumber + 1);
+                            }
                           }
                           break;
                       }
