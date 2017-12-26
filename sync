@@ -161,13 +161,18 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
       vox.LogNote({ sig: methodSig('mold(bytes32,uint256)'), foo: '0x7761790000000000000000000000000000000000000000000000000000000000' }, { fromBlock }, e2 => {
         if (!e2) {
           console.log('Way filter detected, getting logs');
+          const execute = () => getWays().then(
+            () => {
+              console.log('Way logs updated');
+              getWaysQueue.next();
+            },
+            e3 => {
+              console.log('Error getting Way logs, trying again...', e3);
+              execute();
+            }
+          )
           getWaysQueue.place(() =>
-            getWays().then(
-              () => getWaysQueue.next(),
-              e3 => {
-                console.log('Error getting Way logs', e3);
-                getWaysQueue.next()
-              })
+            execute()
           );
         }
       });
@@ -235,13 +240,18 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
       tub.LogNote({ sig: methodSig('mold(bytes32,uint256)'), foo: '0x6d61740000000000000000000000000000000000000000000000000000000000' }, { fromBlock }, e2 => {
         if (!e2) {
           console.log('Mat filter detected, getting logs');
+          const execute = () => getMats().then(
+            () => {
+              console.log('Mat logs updated');
+              getMatsQueue.next();
+            },
+            e3 => {
+              console.log('Error getting Mat logs, trying again...', e3);
+              execute();
+            }
+          )
           getMatsQueue.place(() =>
-            getMats().then(
-              () => getMatsQueue.next(),
-              e3 => {
-                console.log('Error getting Mat logs', e3);
-                getMatsQueue.next()
-              })
+            execute()
           );
         }
       });
@@ -343,13 +353,18 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
       tap.LogNote({ sig: [methodSig('boom(uint256)'), methodSig('bust(uint256)')] }, { fromBlock }, e2 => {
         if (!e2) {
           console.log('Per filter detected, getting logs');
+          const execute = () => getPers().then(
+            () => {
+              console.log('Per logs updated');
+              getPersQueue.next();
+            },
+            e3 => {
+              console.log('Error getting Per logs, trying again...', e3);
+              execute();
+            }
+          )
           getPersQueue.place(() =>
-            getPers().then(
-              () => getPersQueue.next(),
-              e3 => {
-                console.log('Error getting Per logs', e3);
-                getPersQueue.next()
-              })
+            execute()
           );
         }
       });
@@ -416,13 +431,18 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
       pip.LogValue({}, { fromBlock }, e2 => {
         if (!e2) {
           console.log('Pip filter detected, getting logs');
+          const execute = () => getPips().then(
+            () => {
+              console.log('Pip logs updated');
+              getPipsQueue.next();
+            },
+            e3 => {
+              console.log('Error getting Pip logs, trying again...', e3);
+              execute();
+            }
+          )
           getPipsQueue.place(() =>
-            getPips().then(
-              () => getPipsQueue.next(),
-              e3 => {
-                console.log('Error getting Pip logs', e3);
-                getPipsQueue.next()
-              })
+            execute()
           );
         }
       });
@@ -489,13 +509,18 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
       pep.LogValue({}, { fromBlock }, e2 => {
         if (!e2) {
           console.log('Pep filter detected, getting logs');
+          const execute = () => getPeps().then(
+            () => {
+              console.log('Pep logs updated');
+              getPepsQueue.next();
+            },
+            e3 => {
+              console.log('Error getting Pep logs, trying again...', e3);
+              execute();
+            }
+          )
           getPepsQueue.place(() =>
-            getPeps().then(
-              () => getPepsQueue.next(),
-              e3 => {
-                console.log('Error getting Pep logs', e3);
-                getPepsQueue.next()
-              })
+            execute()
           );
         }
       });
@@ -657,13 +682,18 @@ const executeSync = (tub, tap, gem, skr, vox, pip, pep) => {
       web3.eth.filter({ fromBlock , address: tub.address }, e2 => {
         if (!e2) {
           console.log('New Cup action detected, getting logs');
+          const execute = () => getCups().then(
+            () => {
+              console.log('Cups logs updated');
+              getCupsQueue.next();
+            },
+            e3 => {
+              console.log('Error getting Cups logs, trying again...', e3);
+              execute();
+            }
+          )
           getCupsQueue.place(() =>
-            getCups().then(
-              () => getCupsQueue.next(),
-              e3 => {
-                console.log('Error getting Cups logs', e3);
-                getCupsQueue.next()
-              })
+            execute()
           );
         }
       });
