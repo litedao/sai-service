@@ -2,7 +2,6 @@
 
 const mongoose = require('./schema.js').mongoose;
 const settings = require('./settings');
-const { exec } = require('child_process');
 
 let network = 'main';
 let port = 4000;
@@ -15,7 +14,8 @@ process.argv.forEach((v, i) => {
   }
 });
 
-mongoose.connect(`mongodb://localhost/sai-service-${network}-${settings.version}`, { useMongoClient: true }, (e) => {
+const db = `sai-service-${network}${settings.version ? `-${settings.version}` : ''}`;
+mongoose.connect(`mongodb://localhost/${db}`, { useMongoClient: true }, (e) => {
   if (!e) {
     var http = require('http');
 
@@ -30,7 +30,7 @@ mongoose.connect(`mongodb://localhost/sai-service-${network}-${settings.version}
     }).listen(port);
   }
 });
-console.log(`Server running on port ${port}, reading from DB: sai-service-${network}-${settings.version}`);
+console.log(`Server running on port ${port}, reading from DB: ${db}`);
 
 const prom = (url) => {
   const p = new Promise((resolve, reject) => {
