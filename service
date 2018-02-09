@@ -81,10 +81,13 @@ const prom = (url) => {
         }
       }
     }
-
+    let query = null;
     switch(urlParts[1]) {
       case 'ways':
-        mongoose.model('Way').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
+        query = mongoose.model('Way').collection.find(conditions);
+        if (skip && skip > 0) { query = query.skip(skip); }
+        if (limit && limit > 0) { query = query.limit(limit); }
+        query.sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
           if (!e) {
             mongoose.model('Way').collection.find().sort({ 'blockNumber': -1 }).limit(1).toArray((e2, r2) => {
               if (!e2) {
@@ -99,7 +102,10 @@ const prom = (url) => {
         });
         break;
       case 'pers':
-        mongoose.model('Per').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
+        query = mongoose.model('Per').collection.find(conditions);
+        if (skip && skip > 0) { query = query.skip(skip); }
+        if (limit && limit > 0) { query = query.limit(limit); }
+        query.sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
           if (!e) {
             mongoose.model('Per').collection.find().sort({ 'blockNumber': -1 }).limit(1).toArray((e2, r2) => {
               if (!e2) {
@@ -114,7 +120,10 @@ const prom = (url) => {
         });
         break;
       case 'pips':
-        mongoose.model('Pip').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
+        query = mongoose.model('Pip').collection.find(conditions);
+        if (skip && skip > 0) { query = query.skip(skip); }
+        if (limit && limit > 0) { query = query.limit(limit); }
+        query.sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
           if (!e) {
             mongoose.model('Pip').collection.find().sort({ 'blockNumber': -1 }).limit(1).toArray((e2, r2) => {
               if (!e2) {
@@ -129,7 +138,10 @@ const prom = (url) => {
         });
         break;
       case 'peps':
-        mongoose.model('Pep').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
+        query = mongoose.model('Pep').collection.find(conditions);
+        if (skip && skip > 0) { query = query.skip(skip); }
+        if (limit && limit > 0) { query = query.limit(limit); }
+        query.sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
           if (!e) {
             mongoose.model('Pep').collection.find().sort({ 'blockNumber': -1 }).limit(1).toArray((e2, r2) => {
               if (!e2) {
@@ -144,7 +156,10 @@ const prom = (url) => {
         });
         break;
       case 'mats':
-        mongoose.model('Mat').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
+        query = mongoose.model('Mat').collection.find(conditions);
+        if (skip && skip > 0) { query = query.skip(skip); }
+        if (limit && limit > 0) { query = query.limit(limit); }
+        query.sort(sort ? sort : { 'timestamp': 1 }).toArray((e, r) => {
           if (!e) {
             mongoose.model('Mat').collection.find().sort({ 'blockNumber': -1 }).limit(1).toArray((e2, r2) => {
               if (!e2) {
@@ -208,7 +223,7 @@ const prom = (url) => {
         });
         break;
       case 'cupHistoryActions':
-        let query = mongoose.model('CupHistoryAction').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 });
+        query = mongoose.model('CupHistoryAction').collection.find(conditions).sort(sort ? sort : { 'timestamp': 1 });
         query.count((e, r) => {
           if (!e) {
             if (skip && skip > 0) { query = query.skip(skip); }
