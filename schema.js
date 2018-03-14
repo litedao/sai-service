@@ -80,6 +80,7 @@ const CupHistoryAction = new Schema(
     "timestamp": Number,
     "blockNumber": Number,
     "transactionHash": String,
+    "logIndex": String,
   });
 mongoose.model('CupHistoryAction', CupHistoryAction);
 
